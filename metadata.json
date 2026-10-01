@@ -1,0 +1,6 @@
+{
+  "name": "Nevrixa - AI Video Analytics & Operational Intelligence",
+  "description": "Enterprise AI video analytics and operational intelligence platform. Perception, understanding, and automated action across multi-site camera infrastructure.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

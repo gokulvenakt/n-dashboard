@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+/* Sleek custom vertical scroller for slider and panels */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F4F4F4;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+  border: 2px solid #F4F4F4;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #016D5D;
+}
