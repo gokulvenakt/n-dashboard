@@ -1308,7 +1308,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                       <WifiOff className="w-3 h-3 text-red-400 animate-pulse" />
                     )}
                     <span className="text-[9px] font-mono tracking-wider font-semibold uppercase">
-                      {cam.isOnline ? cam.res : 'SIGNAL DROP'}
+                      {cam.isOnline ? cam.res : 'NO SIGNAL'}
                     </span>
                   </div>
                   <span className="text-[9px] font-mono text-neutral-400">
@@ -1334,7 +1334,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   </span>
                 ) : (
                   <span className="text-red-700 font-bold flex items-center gap-1 group-hover:underline">
-                    <RefreshCw className="w-3 h-3 text-red-600 animate-spin" style={{ animationDuration: '4s' }} /> Reconnect Now
+                    <RefreshCw className="w-3 h-3 text-red-600 animate-spin" style={{ animationDuration: '4s' }} /> Reconnect
                   </span>
                 )}
                 <span className="text-[9px] text-neutral-400 truncate max-w-[65px]">
