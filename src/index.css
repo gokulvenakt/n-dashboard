@@ -32,3 +32,40 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #016D5D;
 }
+
+/* Eye-Catching Modern Design Formula Utilities */
+@keyframes radarSweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.08); }
+}
+
+.animate-radar {
+  animation: radarSweep 4s linear infinite;
+}
+
+.animate-glow {
+  animation: glowPulse 2.5s ease-in-out infinite;
+}
+
+/* Subtle glassmorphism and card elevation */
+.card-glass {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+}
+
+.pattern-dots {
+  background-image: radial-gradient(rgba(1, 109, 93, 0.08) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.pattern-grid {
+  background-size: 20px 20px;
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+}
+
