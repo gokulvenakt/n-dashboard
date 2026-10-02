@@ -36,7 +36,10 @@ import {
   Wifi,
   WifiOff,
   Video,
+  ChevronDown,
+  Calendar,
 } from 'lucide-react';
+import { GeminiAiAssistant } from './GeminiAiAssistant';
 
 interface OverviewViewProps {
   findings: Finding[];
@@ -59,6 +62,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   onOpenCommandPalette,
   onTriggerReconnect,
 }) => {
+  // Global Header Time Range State
+  const [selectedTimeRange, setSelectedTimeRange] = useState<'Today' | '7 days' | '30 days'>('Today');
+
   // AI Copilot Query State
   const [aiQueryInput, setAiQueryInput] = useState('');
   const [activeCopilotAnswer, setActiveCopilotAnswer] = useState<{
@@ -211,20 +217,15 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-3 border-b border-[#E5E7EB]">
         <div>
           <div className="text-xs font-semibold text-[#016D5D] tracking-wide uppercase font-mono flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#00E9C9] animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-[#016D5D]" />
             <span>NEVRIXA AI Operations Command Center</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#000000] mt-1">
-            Good morning
-          </h1>
-          <p className="text-xs text-neutral-500 mt-0.5 font-medium">
-            Friday, October 2 · Autonomous video perception and continuous facility governance
-          </p>
+
 
           {/* Compact Telemetry Status Line */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2.5 text-xs text-neutral-600 font-mono">
             <div className="flex items-center gap-1.5 font-semibold text-neutral-900 bg-[#E6F4F1] text-[#016D5D] px-2 py-0.5 rounded-md border border-[#016D5D]/20">
-              <span className="w-2 h-2 rounded-full bg-[#00E9C9] animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-[#016D5D]" />
               <span>All systems operational</span>
             </div>
             <span className="text-neutral-300">|</span>
@@ -242,25 +243,24 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           </div>
         </div>
 
-        {/* Global CTA Actions */}
+        {/* Global Date Range Selector: Today, 7 days, 30 days */}
         <div className="flex items-center gap-2.5 shrink-0">
-          <button
-            type="button"
-            onClick={() => onOpenCommandPalette ? onOpenCommandPalette() : handleAskCopilot('Summarize today\'s critical findings')}
-            className="px-4 py-2 bg-[#016D5D] hover:bg-[#01584b] text-white rounded-lg text-xs font-semibold flex items-center gap-2 transition-all shadow-sm cursor-pointer group"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-[#00E9C9] group-hover:rotate-12 transition-transform" />
-            <span>Ask Nevrixa</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onOpenLiveWall ? onOpenLiveWall() : onNavigateToFindings()}
-            className="px-3.5 py-2 bg-white hover:bg-[#F4F4F4] text-neutral-800 border border-[#E5E7EB] rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors shadow-2xs cursor-pointer"
-          >
-            <Radio className="w-3.5 h-3.5 text-[#016D5D]" />
-            <span>View live wall</span>
-          </button>
+          <div className="relative flex items-center bg-white border border-[#E5E7EB] hover:border-[#016D5D]/50 rounded-lg p-0.5 shadow-2xs transition-colors">
+            <div className="pl-2.5 pr-1 text-[#016D5D] flex items-center">
+              <Calendar className="w-3.5 h-3.5" />
+            </div>
+            <select
+              value={selectedTimeRange}
+              onChange={(e) => setSelectedTimeRange(e.target.value as 'Today' | '7 days' | '30 days')}
+              className="bg-transparent text-xs font-semibold text-neutral-800 pr-7 py-1.5 pl-1 outline-none cursor-pointer appearance-none font-mono"
+              aria-label="Select Date Range"
+            >
+              <option value="Today">Today</option>
+              <option value="7 days">7 days</option>
+              <option value="30 days">30 days</option>
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-neutral-500 absolute right-2.5 pointer-events-none" />
+          </div>
         </div>
       </div>
 
@@ -292,10 +292,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   </div>
                 </div>
               </div>
-              <span className="text-[11px] font-mono text-[#016D5D] bg-white border border-[#016D5D]/25 px-2.5 py-0.5 rounded-full font-semibold shadow-2xs flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#00E9C9] animate-pulse" />
-                Live Continuous Synthesis
-              </span>
+
             </div>
 
             {/* High-confidence bold statement */}
@@ -413,7 +410,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 onClick={() => setBriefingAuditModalOpen(true)}
                 className="px-3.5 py-1.5 bg-[#016D5D] hover:bg-[#01584b] text-white rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
               >
-                <span>See what happened</span>
+                <span>Incident Details</span>
                 <ArrowRight className="w-3 h-3 text-[#00E9C9]" />
               </button>
 
@@ -432,104 +429,291 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           </div>
         </div>
 
-        {/* Right-Side Summary Card: Autonomy — Today (4 Columns) - Colored Modern Card */}
+        {/* Right-Side Summary Card: Autonomy — Today (4 Columns) - Modernized with Centered 3D Donut Chart */}
         <div className="lg:col-span-4 bg-gradient-to-br from-white via-[#F9FBFA] to-[#E6F4F1]/60 border border-[#016D5D]/25 rounded-xl p-5 sm:p-6 shadow-sm flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#00E9C9] animate-pulse" />
-                <span className="text-xs font-bold text-neutral-900 uppercase tracking-wider font-mono">
-                  Autonomy — Today
-                </span>
+            {/* Header with Clarity */}
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-md bg-[#E6F4F1] text-[#016D5D] flex items-center justify-center shadow-2xs">
+                  <Cpu className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-neutral-900 uppercase tracking-wider font-mono">
+                    Autonomy — Today
+                  </h3>
+                  <div className="text-[10px] text-neutral-500 font-sans">
+                    Edge automated triage vs human review
+                  </div>
+                </div>
               </div>
-              <span className="text-[10px] font-mono text-[#016D5D] font-bold bg-[#E6F4F1] px-2 py-0.5 rounded-full">
-                30% Autonomous
-              </span>
+
             </div>
 
-            {/* Circular Gauge / Donut Visualization */}
-            <div className="flex items-center gap-5 my-2">
-              <div className="relative w-28 h-28 shrink-0">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                  {/* Background Track */}
-                  <path
-                    className="text-neutral-100"
-                    strokeWidth="4"
-                    stroke="currentColor"
-                    fill="none"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+            {/* 
+              ==================================================
+              CENTERED 3D DONUT CHART
+              Isometric depth extrusion + lighting + center core
+              Breakdown:
+                - Handled by Nevrixa: 6 findings (30%)
+                - Logged, no action needed: 8 findings (40%)
+                - Reviewed by a person: 6 findings (30%)
+              Total = 20 findings (100%)
+              ==================================================
+            */}
+            <div className="flex flex-col items-center justify-center my-3 relative">
+              <div className="relative w-48 h-44 flex items-center justify-center">
+                <svg className="w-full h-full" viewBox="0 0 200 170">
+                  <defs>
+                    {/* Soft 3D drop shadow filter */}
+                    <filter id="donut3dDepth" x="-20%" y="-10%" width="140%" height="150%">
+                      <feDropShadow dx="0" dy="7" stdDeviation="6" floodColor="#016D5D" floodOpacity="0.25" />
+                    </filter>
+
+                    {/* Gradients for the 3 distinct categories */}
+                    <linearGradient id="gradHandled" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#00E9C9" />
+                      <stop offset="100%" stopColor="#10B981" />
+                    </linearGradient>
+                    <linearGradient id="gradLogged" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#016D5D" />
+                      <stop offset="100%" stopColor="#0D9488" />
+                    </linearGradient>
+                    <linearGradient id="gradReviewed" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#64748B" />
+                      <stop offset="100%" stopColor="#475569" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* 
+                    3D Depth Extrusion (Bottom bevel cylinder layer shifted down by +7px)
+                    Circumference for r=50 is 2*PI*50 = 314.16
+                    Handled: 30% -> 94.2
+                    Logged: 40% -> 125.7
+                    Reviewed: 30% -> 94.2
+                  */}
+                  <g transform="translate(100, 83) rotate(-90)">
+                    {/* Bottom extrusion rim */}
+                    <circle
+                      cx="0"
+                      cy="0"
+                      r="50"
+                      fill="none"
+                      stroke="#E2E8F0"
+                      strokeWidth="20"
+                    />
+                    {/* Handled extrusion depth */}
+                    <circle
+                      cx="0"
+                      cy="0"
+                      r="50"
+                      fill="none"
+                      stroke="#059669"
+                      strokeWidth="20"
+                      strokeDasharray="94.2 314.2"
+                      strokeDashoffset="0"
+                      strokeLinecap="round"
+                      opacity="0.85"
+                    />
+                    {/* Logged extrusion depth */}
+                    <circle
+                      cx="0"
+                      cy="0"
+                      r="50"
+                      fill="none"
+                      stroke="#00483E"
+                      strokeWidth="20"
+                      strokeDasharray="125.7 314.2"
+                      strokeDashoffset="-94.2"
+                      strokeLinecap="round"
+                      opacity="0.85"
+                    />
+                    {/* Reviewed extrusion depth */}
+                    <circle
+                      cx="0"
+                      cy="0"
+                      r="50"
+                      fill="none"
+                      stroke="#334155"
+                      strokeWidth="20"
+                      strokeDasharray="94.2 314.2"
+                      strokeDashoffset="-219.9"
+                      strokeLinecap="round"
+                      opacity="0.85"
+                    />
+                  </g>
+
+                  {/* 
+                    Top 3D Donut Surface with Drop Shadow Filter
+                  */}
+                  <g filter="url(#donut3dDepth)" transform="translate(100, 76) rotate(-90)">
+                    {/* Base track */}
+                    <circle
+                      cx="0"
+                      cy="0"
+                      r="50"
+                      fill="none"
+                      stroke="#F1F5F9"
+                      strokeWidth="18"
+                    />
+                    {/* Handled by Nevrixa (30% -> 6/20 findings) */}
+                    <circle
+                      cx="0"
+                      cy="0"
+                      r="50"
+                      fill="none"
+                      stroke="url(#gradHandled)"
+                      strokeWidth="18"
+                      strokeDasharray="94.2 314.2"
+                      strokeDashoffset="0"
+                      strokeLinecap="round"
+                    />
+                    {/* Logged, no action needed (40% -> 8/20 findings) */}
+                    <circle
+                      cx="0"
+                      cy="0"
+                      r="50"
+                      fill="none"
+                      stroke="url(#gradLogged)"
+                      strokeWidth="18"
+                      strokeDasharray="125.7 314.2"
+                      strokeDashoffset="-94.2"
+                      strokeLinecap="round"
+                    />
+                    {/* Reviewed by a person (30% -> 6/20 findings) */}
+                    <circle
+                      cx="0"
+                      cy="0"
+                      r="50"
+                      fill="none"
+                      stroke="url(#gradReviewed)"
+                      strokeWidth="18"
+                      strokeDasharray="94.2 314.2"
+                      strokeDashoffset="-219.9"
+                      strokeLinecap="round"
+                    />
+                  </g>
+
+                  {/* Center Core Readout Disc */}
+                  <circle
+                    cx="100"
+                    cy="76"
+                    r="34"
+                    fill="#FFFFFF"
+                    stroke="#E2E8F0"
+                    strokeWidth="1.5"
+                    className="shadow-inner"
                   />
-                  {/* Handled by Nevrixa (30% -> 6/20) */}
-                  <path
-                    className="text-[#00E9C9]"
-                    strokeDasharray="30, 100"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    stroke="currentColor"
-                    fill="none"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  />
-                  {/* Reviewed by Human (70% -> 14/20) */}
-                  <path
-                    className="text-[#016D5D]"
-                    strokeDasharray="70, 100"
-                    strokeDashoffset="-30"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    stroke="currentColor"
-                    fill="none"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  />
+                  <text
+                    x="100"
+                    y="72"
+                    textAnchor="middle"
+                    className="text-2xl font-bold font-mono fill-neutral-900 leading-none select-none"
+                  >
+                    20
+                  </text>
+                  <text
+                    x="100"
+                    y="86"
+                    textAnchor="middle"
+                    className="text-[9px] font-mono uppercase font-bold fill-neutral-400 select-none tracking-wider"
+                  >
+                    FINDINGS
+                  </text>
+                  <text
+                    x="100"
+                    y="98"
+                    textAnchor="middle"
+                    className="text-[9px] font-mono font-bold fill-[#016D5D] select-none"
+                  >
+                    70% AUTO
+                  </text>
                 </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                  <span className="text-2xl font-bold text-neutral-900 font-mono leading-none">20</span>
-                  <span className="text-[10px] text-neutral-500 font-mono mt-0.5">findings</span>
+              </div>
+            </div>
+
+            {/* 
+              ==================================================
+              THE 3 CLEAR OPERATIONAL CATEGORIES
+              - Handled by Nevrixa
+              - Logged, no action needed
+              - Reviewed by a person
+              ==================================================
+            */}
+            <div className="space-y-2 mt-1">
+              {/* Category 1: Handled by Nevrixa */}
+              <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-50/80 border border-emerald-200/90 shadow-2xs hover:bg-emerald-50 transition-colors">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] shrink-0 shadow-2xs" />
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-neutral-900 truncate">
+                      Handled by Nevrixa
+                    </div>
+                    <div className="text-[10px] text-neutral-500 truncate">
+                      Automated edge actions dispatched
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right pl-2 shrink-0">
+                  <span className="text-xs font-mono font-bold text-neutral-900">6</span>
+                  <span className="text-[11px] font-mono font-semibold text-emerald-700 ml-1">(30%)</span>
                 </div>
               </div>
 
-              <div className="space-y-2 flex-1 min-w-0">
-                <div className="flex items-center justify-between text-xs p-1.5 rounded bg-white border border-[#E5E7EB] shadow-2xs">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#00E9C9] shrink-0" />
-                    <span className="text-neutral-700 truncate font-medium">Handled by Nevrixa</span>
+              {/* Category 2: Logged, no action needed */}
+              <div className="flex items-center justify-between p-2 rounded-lg bg-[#E6F4F1]/80 border border-[#016D5D]/20 shadow-2xs hover:bg-[#E6F4F1] transition-colors">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#016D5D] shrink-0 shadow-2xs" />
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-neutral-900 truncate">
+                      Logged, no action needed
+                    </div>
+                    <div className="text-[10px] text-neutral-500 truncate">
+                      Routine telemetry auto-cataloged
+                    </div>
                   </div>
-                  <span className="font-mono font-bold text-neutral-900 ml-1">6 (30%)</span>
                 </div>
+                <div className="text-right pl-2 shrink-0">
+                  <span className="text-xs font-mono font-bold text-neutral-900">8</span>
+                  <span className="text-[11px] font-mono font-semibold text-[#016D5D] ml-1">(40%)</span>
+                </div>
+              </div>
 
-                <div className="flex items-center justify-between text-xs p-1.5 rounded bg-white border border-[#E5E7EB] shadow-2xs">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#016D5D] shrink-0" />
-                    <span className="text-neutral-700 truncate font-medium">Reviewed by person</span>
+              {/* Category 3: Reviewed by a person */}
+              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200/90 shadow-2xs hover:bg-slate-100/70 transition-colors">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#64748B] shrink-0 shadow-2xs" />
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-neutral-900 truncate">
+                      Reviewed by a person
+                    </div>
+                    <div className="text-[10px] text-neutral-500 truncate">
+                      Operator verified & signed off
+                    </div>
                   </div>
-                  <span className="font-mono font-bold text-neutral-900 ml-1">14 (70%)</span>
+                </div>
+                <div className="text-right pl-2 shrink-0">
+                  <span className="text-xs font-mono font-bold text-neutral-900">6</span>
+                  <span className="text-[11px] font-mono font-semibold text-slate-700 ml-1">(30%)</span>
                 </div>
               </div>
             </div>
 
-            {/* Status Breakdown Indicators with distinct colored backgrounds */}
-            <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-[#016D5D]/15 text-xs">
-              <div className="py-2 px-2.5 rounded-lg bg-emerald-50/90 border border-emerald-200">
-                <div className="text-[10px] font-mono text-emerald-700 uppercase font-semibold">Action required</div>
-                <div className="font-mono font-bold text-emerald-950 text-sm mt-0.5">
-                  0 actions
-                </div>
-              </div>
-              <div className="py-2 px-2.5 rounded-lg bg-amber-50/90 border border-amber-200">
-                <div className="text-[10px] font-mono text-amber-700 uppercase font-semibold">Waiting on you</div>
-                <div className="font-mono font-bold text-amber-950 text-sm mt-0.5">
-                  8 waiting
-                </div>
-              </div>
+            {/* Clarity Summary Note */}
+            <div className="mt-3 p-2 rounded-lg bg-white border border-[#E5E7EB] text-[10px] font-mono text-neutral-600 flex items-center justify-between">
+              <span>Auto-triage efficiency:</span>
+              <span className="font-bold text-[#016D5D]">14 of 20 (70%) hands-free</span>
             </div>
           </div>
 
-          <div className="mt-5 pt-3 border-t border-[#016D5D]/15">
+          {/* Audit Log Footer Link */}
+          <div className="mt-4 pt-3 border-t border-[#016D5D]/15">
             <button
               type="button"
-              onClick={onNavigateToFindings}
+              onClick={() => setBriefingAuditModalOpen(true)}
               className="text-xs font-bold text-[#016D5D] hover:text-[#01584b] flex items-center justify-between w-full group cursor-pointer"
             >
-              <span>Automation audit log</span>
+              <span>Inspect Automation Audit Log</span>
               <ArrowRight className="w-3.5 h-3.5 text-[#016D5D] group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
@@ -552,9 +736,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               Ask about your cameras or findings
             </h2>
           </div>
-          <span className="text-[11px] font-mono text-neutral-500 bg-white px-2 py-0.5 rounded border border-[#E5E7EB]">
-            Natural Language Operating Layer
-          </span>
+
         </div>
 
         {/* Input Form with Cyan Ring Focus */}
@@ -606,7 +788,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           <div className="mt-3 p-4 bg-gradient-to-br from-[#E6F4F1] to-[#F0FAF8] border border-[#016D5D]/30 rounded-lg space-y-2.5 animate-in fade-in duration-200 shadow-xs">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#00E9C9] animate-ping" />
+                <span className="w-2 h-2 rounded-full bg-[#016D5D]" />
                 <span className="text-xs font-bold text-[#016D5D]">
                   Nevrixa Perception Response
                 </span>
@@ -686,7 +868,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <span className="text-red-750 font-bold bg-red-100/90 text-red-800 px-2 py-0.5 rounded-md border border-red-200/60">
               +2 vs yesterday
             </span>
-            <span className="text-neutral-500 font-semibold">0 prior</span>
+
           </div>
           {/* Micro Area Sparkline */}
           <div className="mt-3 h-10 w-full pt-1">
@@ -715,7 +897,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#016D5D] via-[#00E9C9] to-[#8FF2E2]" />
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[#016D5D] uppercase tracking-wider font-mono flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#00E9C9] animate-pulse" />
+
               Total Findings
             </span>
             <div className="w-8 h-8 rounded-lg bg-[#016D5D] text-[#00E9C9] flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform">
@@ -730,7 +912,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <span className="text-[#016D5D] font-bold bg-[#8FF2E2]/50 px-2 py-0.5 rounded-md border border-[#016D5D]/20">
               +900% vs 24h
             </span>
-            <span className="text-neutral-500 font-semibold">2 prior baseline</span>
+
           </div>
           {/* Micro Area Sparkline */}
           <div className="mt-3 h-10 w-full pt-1">
@@ -759,7 +941,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-400" />
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-emerald-900 uppercase tracking-wider font-mono flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+
               Cameras Online
             </span>
             <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform">
@@ -768,13 +950,13 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           </div>
           <div className="mt-2.5 flex items-baseline gap-2">
             <span className="text-3xl sm:text-4xl font-bold font-mono text-neutral-950 tracking-tight">15 / 15</span>
-            <span className="text-xs text-emerald-700 font-bold bg-emerald-100/90 px-1.5 py-0.5 rounded">100% active</span>
+
           </div>
           <div className="mt-1.5 flex items-center justify-between text-[11px] font-mono">
             <span className="text-emerald-800 font-bold bg-emerald-100/70 px-2 py-0.5 rounded-md border border-emerald-200/60">
               12 primary nodes
             </span>
-            <span className="text-neutral-500 font-semibold">0 stream drops</span>
+
           </div>
           {/* Steady green wave sparkline */}
           <div className="mt-3 h-10 w-full pt-1">
@@ -803,8 +985,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-600 via-sky-500 to-indigo-400" />
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-indigo-950 uppercase tracking-wider font-mono flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-              Edge Inference Speed
+
+              Inference Speed
             </span>
             <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform">
               <Cpu className="w-4 h-4 text-indigo-700" />
@@ -812,23 +994,21 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           </div>
           <div className="mt-2.5 flex items-baseline gap-2">
             <span className="text-3xl sm:text-4xl font-bold font-mono text-neutral-950 tracking-tight">14.2</span>
-            <span className="text-xs text-neutral-500 font-mono font-medium">ms / frame (60 FPS)</span>
+            <span className="text-xs text-neutral-500 font-mono font-medium">ms / frame</span>
           </div>
           <div className="mt-1.5 flex items-center justify-between text-[11px] font-mono">
             <span className="text-indigo-800 font-bold bg-indigo-100/90 px-2 py-0.5 rounded-md border border-indigo-200/60">
               3 Monitored Sites
             </span>
-            <span className="text-neutral-500 font-semibold">99.98% uptime</span>
+
           </div>
           {/* Micro pulse wave indicator */}
           <div className="mt-3 flex items-center justify-between h-10 px-2 bg-indigo-50/50 rounded-lg border border-indigo-100/80">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#00E9C9] animate-ping" />
+
               <span className="text-[11px] font-mono text-neutral-700 font-bold">Chennai · Munich · Singapore</span>
             </div>
-            <span className="text-[10px] font-mono font-bold text-indigo-700 bg-white px-1.5 py-0.5 rounded border border-indigo-200">
-              Edge Live
-            </span>
+
           </div>
         </div>
       </div>
@@ -861,9 +1041,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div className="p-3.5 rounded-xl bg-gradient-to-r from-red-50/90 via-white to-red-50/40 border border-red-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-red-600 text-white font-bold">
-                    Critical
-                  </span>
+
                   <span className="text-xs font-bold text-neutral-900">
                     Critical findings appeared this period
                   </span>
@@ -888,9 +1066,6 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-50/90 via-white to-amber-50/40 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500 text-white font-bold">
-                    Attention
-                  </span>
                   <span className="text-xs font-bold text-neutral-900">
                     Corridor Area has gone dark
                   </span>
@@ -914,15 +1089,13 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-50/70 via-white to-orange-50/30 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500 text-white font-bold">
-                    Attention
-                  </span>
+
                   <span className="text-xs font-bold text-neutral-900">
                     Camera offline in Godown
                   </span>
                 </div>
                 <div className="text-[11px] text-neutral-600">
-                  Running at <span className="font-mono font-bold text-amber-800">4.5× yesterday's rate</span> · Chennai Facility CAM-02
+                  Running at <span className="font-mono font-bold text-amber-800">4.5× yesterday's rate</span> · Chennai-Op-CAM-02
                 </div>
               </div>
               <button
@@ -933,10 +1106,11 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 }}
                 className="px-3.5 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded text-xs font-bold shrink-0 transition-colors cursor-pointer shadow-2xs"
               >
-                Review camera offline
+                Review Offline
               </button>
             </div>
           </div>
+
         </div>
 
         {/* Recommended Actions (5 Columns) - Colored Action Cards */}
@@ -1017,7 +1191,6 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               <h2 className="text-sm font-bold text-[#000000]">
                 Coverage · Detection running
               </h2>
-              <span className="w-2.5 h-2.5 rounded-full bg-[#00E9C9] animate-pulse" />
               <span className="text-[11px] font-mono text-[#016D5D] bg-[#E6F4F1] px-2 py-0.5 rounded font-bold">
                 12 Monitored Streams
               </span>
@@ -1046,33 +1219,30 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               <button
                 type="button"
                 onClick={() => setCoverageFilter('all')}
-                className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
-                  coverageFilter === 'all'
-                    ? 'bg-[#016D5D] text-white font-bold shadow-2xs'
-                    : 'text-neutral-600 hover:text-neutral-900'
-                }`}
+                className={`px-3 py-1 rounded-md transition-all cursor-pointer ${coverageFilter === 'all'
+                  ? 'bg-[#016D5D] text-white font-bold shadow-2xs'
+                  : 'text-neutral-600 hover:text-neutral-900'
+                  }`}
               >
                 All (12)
               </button>
               <button
                 type="button"
                 onClick={() => setCoverageFilter('online')}
-                className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
-                  coverageFilter === 'online'
-                    ? 'bg-[#016D5D] text-white font-bold shadow-2xs'
-                    : 'text-neutral-600 hover:text-neutral-900'
-                }`}
+                className={`px-3 py-1 rounded-md transition-all cursor-pointer ${coverageFilter === 'online'
+                  ? 'bg-[#016D5D] text-white font-bold shadow-2xs'
+                  : 'text-neutral-600 hover:text-neutral-900'
+                  }`}
               >
                 Online (9)
               </button>
               <button
                 type="button"
                 onClick={() => setCoverageFilter('offline')}
-                className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
-                  coverageFilter === 'offline'
-                    ? 'bg-red-600 text-white font-bold shadow-2xs'
-                    : 'text-neutral-600 hover:text-neutral-900'
-                }`}
+                className={`px-3 py-1 rounded-md transition-all cursor-pointer ${coverageFilter === 'offline'
+                  ? 'bg-red-600 text-white font-bold shadow-2xs'
+                  : 'text-neutral-600 hover:text-neutral-900'
+                  }`}
               >
                 Offline (3)
               </button>
@@ -1093,17 +1263,15 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   onTriggerReconnect(cam.name);
                 }
               }}
-              className={`rounded-xl border p-3 text-left transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden group shadow-2xs hover:shadow-md hover:-translate-y-1 ${
-                !cam.isOnline
-                  ? 'bg-gradient-to-br from-red-500/10 via-white to-rose-50/70 border-red-200 hover:border-red-400'
-                  : 'bg-gradient-to-br from-white via-[#F9FBFA] to-[#E6F4F1]/60 border-[#E5E7EB] hover:border-[#016D5D]'
-              }`}
+              className={`rounded-xl border p-3 text-left transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden group shadow-2xs hover:shadow-md hover:-translate-y-1 ${!cam.isOnline
+                ? 'bg-gradient-to-br from-red-500/10 via-white to-rose-50/70 border-red-200 hover:border-red-400'
+                : 'bg-gradient-to-br from-white via-[#F9FBFA] to-[#E6F4F1]/60 border-[#E5E7EB] hover:border-[#016D5D]'
+                }`}
             >
               {/* Top micro-line */}
               <div
-                className={`absolute top-0 left-0 right-0 h-0.5 ${
-                  cam.isOnline ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-gradient-to-r from-red-600 to-rose-400'
-                }`}
+                className={`absolute top-0 left-0 right-0 h-0.5 ${cam.isOnline ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-gradient-to-r from-red-600 to-rose-400'
+                  }`}
               />
 
               <div>
@@ -1111,14 +1279,12 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
                     <span
-                      className={`w-2 h-2 rounded-full ${
-                        cam.isOnline ? 'bg-emerald-500 animate-pulse' : cam.isWarning ? 'bg-amber-500' : 'bg-red-500'
-                      }`}
+                      className={`w-2 h-2 rounded-full ${cam.isOnline ? 'bg-emerald-500 animate-pulse' : cam.isWarning ? 'bg-amber-500' : 'bg-red-500'
+                        }`}
                     />
                     <span
-                      className={`text-[10px] font-mono font-bold ${
-                        cam.isOnline ? 'text-emerald-700' : 'text-red-700'
-                      }`}
+                      className={`text-[10px] font-mono font-bold ${cam.isOnline ? 'text-emerald-700' : 'text-red-700'
+                        }`}
                     >
                       {cam.status}
                     </span>
@@ -1130,11 +1296,10 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
                 {/* Simulated Lens Viewport Thumbnail Bar */}
                 <div
-                  className={`w-full h-11 rounded-lg mb-2 flex items-center justify-between px-2.5 transition-colors ${
-                    cam.isOnline
-                      ? 'bg-neutral-900 text-neutral-300 pattern-grid group-hover:bg-neutral-950'
-                      : 'bg-red-950/80 text-red-200 border border-red-800/40'
-                  }`}
+                  className={`w-full h-11 rounded-lg mb-2 flex items-center justify-between px-2.5 transition-colors ${cam.isOnline
+                    ? 'bg-neutral-900 text-neutral-300 pattern-grid group-hover:bg-neutral-950'
+                    : 'bg-red-950/80 text-red-200 border border-red-800/40'
+                    }`}
                 >
                   <div className="flex items-center gap-1.5">
                     {cam.isOnline ? (
@@ -1286,7 +1451,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           </div>
         </div>
 
-        {/* Modern Detection Activity — High-Impact Curved Area Chart (7 Columns) */}
+        {/* Modern Detection Activity — Interactive Stacked Column Chart (7 Columns) */}
         <div className="lg:col-span-7 bg-white border border-[#E5E7EB] rounded-xl p-5 shadow-sm space-y-4 relative overflow-hidden">
           {/* Top accent bar */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#016D5D] via-[#00E9C9] to-teal-400" />
@@ -1300,12 +1465,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 <h2 className="text-sm font-bold text-[#000000]">
                   Detection Activity & Telemetry Surge
                 </h2>
-                <span className="font-bold text-[#016D5D] font-mono text-xs bg-[#E6F4F1] px-2 py-0.5 rounded border border-[#016D5D]/20">
-                  20 findings today
-                </span>
               </div>
               <p className="text-xs text-neutral-500 mt-0.5">
-                Hover along curve to inspect telemetry volume by hour vs yesterday's baseline
+                Interactive stacked column telemetry · Hover over hourly columns to inspect severity distribution
               </p>
             </div>
 
@@ -1315,146 +1477,198 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setChartTimeRange('today')}
-                  className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                    chartTimeRange === 'today'
-                      ? 'bg-[#016D5D] text-white font-bold shadow-2xs'
-                      : 'text-neutral-600 hover:text-neutral-900'
-                  }`}
+                  className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${chartTimeRange === 'today'
+                    ? 'bg-[#016D5D] text-white font-bold shadow-2xs'
+                    : 'text-neutral-600 hover:text-neutral-900'
+                    }`}
                 >
                   Today (24h)
                 </button>
                 <button
                   type="button"
                   onClick={() => setChartTimeRange('peak')}
-                  className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                    chartTimeRange === 'peak'
-                      ? 'bg-[#016D5D] text-white font-bold shadow-2xs'
-                      : 'text-neutral-600 hover:text-neutral-900'
-                  }`}
+                  className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${chartTimeRange === 'peak'
+                    ? 'bg-[#016D5D] text-white font-bold shadow-2xs'
+                    : 'text-neutral-600 hover:text-neutral-900'
+                    }`}
                 >
                   Peak (08-14)
                 </button>
                 <button
                   type="button"
                   onClick={() => setChartTimeRange('7day')}
-                  className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                    chartTimeRange === '7day'
-                      ? 'bg-[#016D5D] text-white font-bold shadow-2xs'
-                      : 'text-neutral-600 hover:text-neutral-900'
-                  }`}
+                  className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${chartTimeRange === '7day'
+                    ? 'bg-[#016D5D] text-white font-bold shadow-2xs'
+                    : 'text-neutral-600 hover:text-neutral-900'
+                    }`}
                 >
                   7D Trend
                 </button>
               </div>
-
-              {/* Baseline toggle button */}
-              <button
-                type="button"
-                onClick={() => setShowYesterdayBaseline(!showYesterdayBaseline)}
-                className={`text-[10px] font-mono px-2 py-1 rounded border transition-colors cursor-pointer ${
-                  showYesterdayBaseline
-                    ? 'bg-[#E6F4F1] border-[#016D5D]/30 text-[#016D5D] font-bold'
-                    : 'bg-white border-neutral-200 text-neutral-500'
-                }`}
-                title="Toggle yesterday reference curve"
-              >
-                Yesterday: {showYesterdayBaseline ? 'ON' : 'OFF'}
-              </button>
             </div>
           </div>
 
-          {/* Interactive Modern SVG Area Chart */}
+          {/* Interactive Stacked Column Chart SVG */}
           <div className="pt-2">
-            <div className="relative w-full h-48 bg-gradient-to-b from-[#F8FBFA] via-white to-[#F4F9F8] rounded-xl border border-neutral-100 p-2 overflow-hidden shadow-inner">
-              <svg className="w-full h-full" viewBox="0 0 740 145" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="activityGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#016D5D" stopOpacity="0.5" />
-                    <stop offset="60%" stopColor="#00E9C9" stopOpacity="0.18" />
-                    <stop offset="100%" stopColor="#00E9C9" stopOpacity="0.0" />
-                  </linearGradient>
-                  <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feGaussianBlur stdDeviation="3" result="blur" />
-                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                  </filter>
-                </defs>
+            <div className="relative w-full h-52 bg-gradient-to-b from-[#F8FBFA] via-white to-[#F4F9F8] rounded-xl border border-neutral-100 p-2 overflow-hidden shadow-inner">
+              <svg className="w-full h-full" viewBox="0 0 740 185">
+                {/* Horizontal grid lines */}
+                <line x1="25" y1="39" x2="735" y2="39" stroke="#E2E8F0" strokeWidth="1" strokeDasharray="3 3" />
+                <line x1="25" y1="68" x2="735" y2="68" stroke="#E2E8F0" strokeWidth="1" strokeDasharray="3 3" />
+                <line x1="25" y1="97" x2="735" y2="97" stroke="#E2E8F0" strokeWidth="1" strokeDasharray="3 3" />
+                <line x1="25" y1="126" x2="735" y2="126" stroke="#E2E8F0" strokeWidth="1" strokeDasharray="3 3" />
+                <line x1="25" y1="155" x2="735" y2="155" stroke="#CBD5E1" strokeWidth="1.2" />
 
-                {/* Subtle horizontal grid lines */}
-                <line x1="0" y1="35" x2="740" y2="35" stroke="#E2E8F0" strokeWidth="1" strokeDasharray="3 3" />
-                <line x1="0" y1="70" x2="740" y2="70" stroke="#E2E8F0" strokeWidth="1" strokeDasharray="3 3" />
-                <line x1="0" y1="105" x2="740" y2="105" stroke="#E2E8F0" strokeWidth="1" strokeDasharray="3 3" />
-
-                {/* Y-axis micro labels */}
-                <text x="6" y="38" className="text-[9px] fill-neutral-400 font-mono">4</text>
-                <text x="6" y="73" className="text-[9px] fill-neutral-400 font-mono">3</text>
-                <text x="6" y="108" className="text-[9px] fill-neutral-400 font-mono">2</text>
-                <text x="6" y="137" className="text-[9px] fill-neutral-400 font-mono">0</text>
+                {/* Y-axis micro count labels */}
+                <text x="8" y="42" className="text-[9px] fill-neutral-400 font-mono">4</text>
+                <text x="8" y="71" className="text-[9px] fill-neutral-400 font-mono">3</text>
+                <text x="8" y="100" className="text-[9px] fill-neutral-400 font-mono">2</text>
+                <text x="8" y="129" className="text-[9px] fill-neutral-400 font-mono">1</text>
+                <text x="8" y="157" className="text-[9px] fill-neutral-400 font-mono">0</text>
 
                 {/* Yesterday Ghost Comparison Line (Dashed) */}
                 {showYesterdayBaseline && (
                   <path
-                    d="M 0,135 C 70,135 120,135 170,135 C 220,115 250,135 270,135 C 290,135 320,135 370,135 C 420,115 450,135 470,135 C 520,135 570,135 620,135 C 670,135 720,135 740,135"
+                    d="M 20,155 C 70,155 120,155 170,155 C 220,126 270,155 320,155 C 370,155 420,126 470,155 C 520,155 570,155 620,155 C 670,126 720,155 740,155"
                     fill="none"
                     stroke="#94A3B8"
-                    strokeWidth="2"
+                    strokeWidth="1.8"
                     strokeDasharray="4 4"
                     opacity="0.8"
                   />
                 )}
 
-                {/* Today's Area Polygon Fill */}
-                <polygon
-                  points="0,135 20,135 70,135 120,135 170,110 220,90 270,60 320,30 370,85 420,60 470,110 520,110 570,135 620,110 670,90 720,135 740,135 740,145 0,145"
-                  fill="url(#activityGradient)"
-                />
-
-                {/* Smooth Bezier Curve Path with Cyan Accent */}
-                <path
-                  d="M 0,135 C 70,135 120,135 170,110 C 220,90 250,75 270,60 C 290,45 305,30 320,30 C 345,30 355,80 370,85 C 390,90 405,65 420,60 C 445,55 455,105 470,110 C 495,115 505,110 520,110 C 545,110 555,135 570,135 C 595,135 605,115 620,110 C 645,105 655,95 670,90 C 695,85 705,135 720,135 L 740,135"
-                  fill="none"
-                  stroke="#016D5D"
-                  strokeWidth="3.2"
-                />
-
-                {/* Pinned Peak Callout at 10:00 (x: 320, y: 30) */}
-                <g className="cursor-pointer">
-                  <line x1="320" y1="30" x2="320" y2="12" stroke="#DC2626" strokeWidth="1.5" strokeDasharray="2 2" />
-                  <rect x="260" y="3" width="120" height="18" rx="4" fill="#DC2626" />
-                  <text x="320" y="15" textAnchor="middle" fill="#FFFFFF" className="text-[9px] font-bold font-mono">
-                    PEAK: 10:00 (4 Events)
-                  </text>
-                </g>
-
-                {/* Data Points on Curve */}
+                {/* Stacked Columns per Timeline Slot */}
                 {timelineHours.map((slot, index) => {
-                  const y =
-                    slot.total === 4
-                      ? 30
-                      : slot.total === 3
-                      ? 60
-                      : slot.total === 2
-                      ? 90
-                      : slot.total === 1
-                      ? 110
-                      : 135;
                   const isHovered = hoveredTimelineHour === index;
+                  const colWidth = 24;
+                  const x = slot.x - colWidth / 2;
+                  const baseY = 155;
+                  const unitH = 29; // 4 findings = 116px (Y = 39)
+                  const infoH = slot.info * unitH;
+                  const attnH = slot.attention * unitH;
+                  const critH = slot.critical * unitH;
+                  const totalH = infoH + attnH + critH;
+
+                  const infoY = baseY - infoH;
+                  const attnY = infoY - attnH;
+                  const critY = attnY - critH;
+
+                  const isCritTop = slot.critical > 0;
+                  const isAttnTop = !isCritTop && slot.attention > 0;
+                  const isInfoTop = !isCritTop && !isAttnTop && slot.info > 0;
 
                   return (
-                    <g key={slot.hour} className="cursor-pointer" onClick={() => setHoveredTimelineHour(index)}>
-                      {isHovered && (
-                        <circle cx={slot.x} cy={y} r="9" fill="#00E9C9" opacity="0.4" className="animate-ping" />
-                      )}
-                      <circle
-                        cx={slot.x}
-                        cy={y}
-                        r={isHovered ? '6' : slot.total > 0 ? '4' : '2.5'}
-                        fill={slot.critical > 0 ? '#DC2626' : slot.total > 0 ? '#016D5D' : '#CBD5E1'}
-                        stroke="#FFFFFF"
-                        strokeWidth="1.8"
+                    <g
+                      key={slot.hour}
+                      className="cursor-pointer transition-opacity"
+                      onMouseEnter={() => setHoveredTimelineHour(index)}
+                      onClick={() => setHoveredTimelineHour(index)}
+                    >
+                      {/* Full-height column hover highlight pill */}
+                      <rect
+                        x={slot.x - 16}
+                        y={15}
+                        width={32}
+                        height={145}
+                        rx={6}
+                        fill={isHovered ? '#016D5D' : 'transparent'}
+                        opacity={isHovered ? 0.08 : 0}
+                        className="transition-all duration-150"
                       />
+
+                      {/* 0-Event Baseline Tick */}
+                      {slot.total === 0 && (
+                        <rect
+                          x={slot.x - 7}
+                          y={153}
+                          width={14}
+                          height={2}
+                          rx={1}
+                          fill="#CBD5E1"
+                          opacity={isHovered ? 1 : 0.6}
+                        />
+                      )}
+
+                      {/* 1. Base Layer: Info / Logged Findings (Deep Teal) */}
+                      {slot.info > 0 && (
+                        <rect
+                          x={x}
+                          y={infoY}
+                          width={colWidth}
+                          height={infoH}
+                          rx={isInfoTop ? 4 : 0}
+                          fill="#016D5D"
+                          className="transition-all duration-150"
+                          opacity={isHovered ? 1 : 0.9}
+                        />
+                      )}
+
+                      {/* 2. Middle Layer: Attention Findings (Amber) */}
+                      {slot.attention > 0 && (
+                        <rect
+                          x={x}
+                          y={attnY}
+                          width={colWidth}
+                          height={attnH}
+                          rx={isAttnTop ? 4 : 0}
+                          fill="#F59E0B"
+                          className="transition-all duration-150"
+                          opacity={isHovered ? 1 : 0.9}
+                        />
+                      )}
+
+                      {/* 3. Top Layer: Critical Severity Findings (Red) */}
+                      {slot.critical > 0 && (
+                        <rect
+                          x={x}
+                          y={critY}
+                          width={colWidth}
+                          height={critH}
+                          rx={isCritTop ? 4 : 0}
+                          fill="#DC2626"
+                          className="transition-all duration-150"
+                          opacity={isHovered ? 1 : 0.95}
+                        />
+                      )}
+
+                      {/* Subtle border outline for hovered column */}
+                      {isHovered && slot.total > 0 && (
+                        <rect
+                          x={x - 1}
+                          y={baseY - totalH - 1}
+                          width={colWidth + 2}
+                          height={totalH + 2}
+                          rx={4}
+                          fill="none"
+                          stroke="#016D5D"
+                          strokeWidth="1.5"
+                          strokeDasharray="2 2"
+                        />
+                      )}
+
+                      {/* X-axis time label */}
+                      <text
+                        x={slot.x}
+                        y={172}
+                        textAnchor="middle"
+                        className={`text-[10px] font-mono select-none ${isHovered ? 'fill-[#016D5D] font-bold' : 'fill-neutral-400 font-medium'
+                          }`}
+                      >
+                        {slot.label.replace(' (Peak)', '')}
+                      </text>
                     </g>
                   );
                 })}
+
+                {/* Pinned Peak Callout at 10:00 (slot.x: 320) */}
+                <g className="cursor-pointer" onClick={() => setHoveredTimelineHour(6)}>
+                  <line x1="320" y1="36" x2="320" y2="18" stroke="#DC2626" strokeWidth="1.5" strokeDasharray="2 2" />
+                  <rect x="250" y="3" width="140" height="20" rx="4" fill="#DC2626" className="shadow-xs" />
+                  <text x="320" y="16" textAnchor="middle" fill="#FFFFFF" className="text-[10px] font-bold font-mono">
+                    PEAK: 10:00 (4 Events)
+                  </text>
+                </g>
               </svg>
 
               {/* Floating Dynamic Tooltip Card */}
@@ -1469,11 +1683,12 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   <div className="text-[10px] text-neutral-300 flex items-center gap-3">
                     <span className="text-red-400 font-bold">{currentHoveredData.critical} critical</span>
                     <span className="text-amber-400">{currentHoveredData.attention} attention</span>
-                    <span className="text-teal-300">{currentHoveredData.info} informational</span>
+                    <span className="text-teal-300">{currentHoveredData.info} info</span>
                   </div>
                   {showYesterdayBaseline && (
-                    <div className="text-[9px] text-neutral-400 pt-0.5">
-                      Yesterday at this hour: <span className="font-bold text-neutral-200">{currentHoveredData.yesterday} findings</span>
+                    <div className="text-[9px] text-neutral-400 pt-0.5 flex items-center justify-between">
+                      <span>Yesterday baseline:</span>
+                      <span className="text-white font-medium">{currentHoveredData.yesterday} findings</span>
                     </div>
                   )}
                 </div>
@@ -1490,22 +1705,22 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 <span className="text-neutral-500">23:59</span>
               </div>
 
-              {/* Legend with Colored Badges */}
+              {/* Legend with Colored Badges for Stacked Columns */}
               <div className="flex items-center gap-3 text-[10px] font-mono">
-                <div className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-red-600" />
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-xs bg-[#DC2626]" />
                   <span>Critical (2)</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-amber-500" />
-                  <span>Attention (9)</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-xs bg-[#F59E0B]" />
+                  <span>Attention (10)</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-[#016D5D]" />
-                  <span>Info (9)</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-xs bg-[#016D5D]" />
+                  <span>Logged/Info (8)</span>
                 </div>
                 {showYesterdayBaseline && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5">
                     <span className="w-3 border-b-2 border-dashed border-neutral-400" />
                     <span className="text-neutral-400">Yesterday</span>
                   </div>
@@ -1812,7 +2027,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div className="p-3.5 rounded-xl border border-amber-200/90 bg-gradient-to-r from-amber-500/15 via-amber-50/50 to-white shadow-2xs border-l-4 border-l-amber-500 space-y-2 hover:shadow-xs transition-all">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+
                   <span className="font-bold text-neutral-900">Camera offline</span>
                 </div>
                 <div className="flex items-center gap-2 font-mono">
@@ -1830,7 +2045,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div className="p-3.5 rounded-xl border border-[#016D5D]/30 bg-gradient-to-r from-[#016D5D]/15 via-[#E6F4F1]/60 to-white shadow-2xs border-l-4 border-l-[#016D5D] space-y-2 hover:shadow-xs transition-all">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#00E9C9] animate-pulse" />
+
                   <span className="font-bold text-neutral-900">Phone use</span>
                 </div>
                 <div className="flex items-center gap-2 font-mono">
@@ -1848,7 +2063,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div className="p-3.5 rounded-xl border border-red-200/90 bg-gradient-to-r from-red-500/15 via-rose-50/50 to-white shadow-2xs border-l-4 border-l-red-600 space-y-2 hover:shadow-xs transition-all">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping" />
+
                   <span className="font-bold text-neutral-900">Intrusion</span>
                 </div>
                 <div className="flex items-center gap-2 font-mono">
@@ -1866,7 +2081,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div className="p-3.5 rounded-xl border border-purple-200/90 bg-gradient-to-r from-purple-500/15 via-purple-50/50 to-white shadow-2xs border-l-4 border-l-purple-600 space-y-2 hover:shadow-xs transition-all">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-purple-600" />
+
                   <span className="font-bold text-neutral-900">Too many people</span>
                 </div>
                 <div className="flex items-center gap-2 font-mono">
@@ -1898,7 +2113,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div className="p-4 rounded-xl bg-gradient-to-r from-[#E6F4F1] via-white to-teal-50/30 border border-[#016D5D]/25 flex items-center justify-between shadow-2xs hover:shadow-xs transition-all">
               <div>
                 <div className="text-xs font-bold text-neutral-900 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#00E9C9]" />
+
                   Phone use newly active
                 </div>
                 <div className="text-[11px] text-neutral-500 mt-0.5">
@@ -1915,7 +2130,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div className="p-4 rounded-xl bg-gradient-to-r from-red-50 via-white to-rose-50/40 border border-red-200 flex items-center justify-between shadow-2xs hover:shadow-xs transition-all">
               <div>
                 <div className="text-xs font-bold text-neutral-900 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+
                   Critical threats elevated
                 </div>
                 <div className="text-[11px] text-neutral-500 mt-0.5">
@@ -1932,7 +2147,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div className="p-4 rounded-xl bg-gradient-to-r from-amber-50 via-white to-orange-50/40 border border-amber-200 flex items-center justify-between shadow-2xs hover:shadow-xs transition-all">
               <div>
                 <div className="text-xs font-bold text-neutral-900 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+
                   Camera concentration
                 </div>
                 <div className="text-[11px] text-neutral-500 mt-0.5">
@@ -2140,6 +2355,19 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         onClose={() => setBriefingAuditModalOpen(false)}
         findings={findings}
         onSelectFinding={(f) => onSelectFinding(f)}
+      />
+
+      {/* Artificial Intelligence (AI) Assistants Floating Box  Assistant) */}
+      <GeminiAiAssistant
+        findings={findings}
+        onNavigateToFindings={onNavigateToFindings}
+        onSelectFinding={onSelectFinding}
+        onSelectCameraStream={(camName) => {
+          setSelectedCameraForStream(camName);
+          setCameraStreamModalOpen(true);
+        }}
+        onOpenAuditModal={() => setBriefingAuditModalOpen(true)}
+        onTriggerReconnect={onTriggerReconnect}
       />
     </div>
   );

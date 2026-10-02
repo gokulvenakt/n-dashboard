@@ -57,27 +57,7 @@ export const TopCommandBar: React.FC<TopCommandBarProps> = ({
         </div>
       </div>
 
-      {/* Center: Prominent Universal AI Search & Command Operating Bar */}
-      <div className="flex-1 max-w-xl mx-4 sm:mx-8">
-        <button
-          type="button"
-          onClick={() => onOpenCommandPalette()}
-          className="w-full h-9 px-3 bg-[#F4F4F4] hover:bg-[#EBEBEB] border border-[#E5E7EB] hover:border-[#016D5D]/40 rounded-lg flex items-center justify-between gap-3 text-xs text-neutral-600 transition-all cursor-pointer group shadow-2xs"
-          title="Universal AI Search (⌘K / Ctrl+K)"
-        >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <Sparkles className="w-3.5 h-3.5 text-[#016D5D] group-hover:text-[#00E9C9] transition-colors shrink-0" />
-            <span className="truncate text-neutral-500 group-hover:text-neutral-900 text-left">
-              Ask Nevrixa about your cameras, findings or sites...
-            </span>
-          </div>
 
-          <div className="flex items-center gap-1 shrink-0 font-mono text-[11px] text-neutral-500 bg-white border border-[#E5E7EB] px-1.5 py-0.5 rounded-md shadow-2xs">
-            <Command className="w-3 h-3 text-neutral-400" />
-            <span>K</span>
-          </div>
-        </button>
-      </div>
 
       {/* Right: Notifications, Help, Workspace & Avatar */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
@@ -170,9 +150,8 @@ export const TopCommandBar: React.FC<TopCommandBarProps> = ({
                     if (onSelectSite) onSelectSite(site.id);
                     setWorkspaceMenuOpen(false);
                   }}
-                  className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-[#F4F4F4] cursor-pointer ${
-                    selectedSite === site.id ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold' : 'text-neutral-700'
-                  }`}
+                  className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-[#F4F4F4] cursor-pointer ${selectedSite === site.id ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold' : 'text-neutral-700'
+                    }`}
                 >
                   <span className="truncate">{site.name}</span>
                   <span className="text-[10px] font-mono text-neutral-500">{site.cameras}</span>
