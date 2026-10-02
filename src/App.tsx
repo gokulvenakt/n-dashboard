@@ -15,6 +15,9 @@ import { AutomationModal } from './components/AutomationModal';
 import { EscalateModal } from './components/EscalateModal';
 import { LiveWallView } from './components/LiveWallView';
 import { OverviewView } from './components/OverviewView';
+import { TopCommandBar } from './components/TopCommandBar';
+import { CommandPaletteModal } from './components/CommandPaletteModal';
+import { ReconnectModal } from './components/ReconnectModal';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { INITIAL_FINDINGS } from './data/mockFindings';
 import {
@@ -29,7 +32,7 @@ export default function App() {
   const [findings, setFindings] = useState<Finding[]>(INITIAL_FINDINGS);
   const [selectedFinding, setSelectedFinding] = useState<Finding | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
-  const [currentTab, setCurrentTab] = useState<string>('findings');
+  const [currentTab, setCurrentTab] = useState<string>('overview');
   const [selectedSite, setSelectedSite] = useState<string>('all');
   
   // Initial default view = Grid View
@@ -40,6 +43,10 @@ export default function App() {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [automationModalOpen, setAutomationModalOpen] = useState(false);
   const [escalateModalOpen, setEscalateModalOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [commandPaletteInitialQuery, setCommandPaletteInitialQuery] = useState('');
+  const [reconnectModalOpen, setReconnectModalOpen] = useState(false);
+  const [reconnectTargetCamera, setReconnectTargetCamera] = useState('Corridor Area');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   // Filtering state
@@ -74,16 +81,22 @@ export default function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen((prev) => !prev);
+      }
       if (e.key === 'Escape') {
         if (selectedFinding) setSelectedFinding(null);
         if (exportModalOpen) setExportModalOpen(false);
         if (automationModalOpen) setAutomationModalOpen(false);
         if (escalateModalOpen) setEscalateModalOpen(false);
+        if (commandPaletteOpen) setCommandPaletteOpen(false);
+        if (reconnectModalOpen) setReconnectModalOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedFinding, exportModalOpen, automationModalOpen, escalateModalOpen]);
+  }, [selectedFinding, exportModalOpen, automationModalOpen, escalateModalOpen, commandPaletteOpen, reconnectModalOpen]);
 
   const handleSiteSelectFromSidebar = (siteId: string) => {
     setSelectedSite(siteId);
@@ -228,6 +241,18 @@ export default function App() {
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         unreadAlertCount={findings.filter((f) => f.statusCategory === 'CRITICAL' && f.status !== 'RESOLVED').length}
+        onSelectSubFinding={(cat) => {
+          setCurrentTab('findings');
+          if (cat === 'ALL') {
+            setFilters((prev) => ({ ...prev, statusCategory: 'ALL' }));
+          } else if (cat === 'CRITICAL') {
+            setFilters((prev) => ({ ...prev, statusCategory: 'CRITICAL' }));
+          } else if (cat === 'ATTENTION') {
+            setFilters((prev) => ({ ...prev, statusCategory: 'ATTENTION' }));
+          } else {
+            setFilters((prev) => ({ ...prev, statusCategory: 'ALL' }));
+          }
+        }}
       />
 
       {/* Main Workspace Canvas */}
@@ -236,24 +261,17 @@ export default function App() {
           sidebarCollapsed ? 'ml-16' : 'ml-64'
         }`}
       >
-        {/* Contextual Top Bar */}
-        <header className="h-14 bg-white border-b border-[#E5E7EB] px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20">
-          <div className="flex items-center gap-2 text-xs">
-            <span className="font-semibold text-neutral-900">NEVRIXA Operations</span>
-            <span className="text-neutral-300">/</span>
-            <span className="text-neutral-500 font-medium capitalize">
-              {currentTab === 'findings' ? 'Finding' : currentTab.replace('-', ' ')}
-            </span>
-            {selectedSite !== 'all' && (
-              <>
-                <span className="text-neutral-300">/</span>
-                <span className="text-[#016D5D] font-semibold bg-[#E6F4F1] px-1.5 py-0.5 rounded text-[11px]">
-                  {filters.site}
-                </span>
-              </>
-            )}
-          </div>
-        </header>
+        {/* Universal Top AI Command & Navigation Header */}
+        <TopCommandBar
+          currentTab={currentTab}
+          selectedSite={selectedSite}
+          onOpenCommandPalette={(initialQuery) => {
+            setCommandPaletteInitialQuery(initialQuery || '');
+            setCommandPaletteOpen(true);
+          }}
+          unreadCount={findings.filter((f) => f.statusCategory === 'CRITICAL' && f.status !== 'RESOLVED').length}
+          onSelectSite={handleSiteSelectFromSidebar}
+        />
 
         {/* Dynamic Content Viewport Area */}
         <div className="flex-1 p-4 sm:p-6 max-w-[1680px] w-full mx-auto space-y-5">
@@ -264,6 +282,15 @@ export default function App() {
               onSelectFinding={(f) => setSelectedFinding(f)}
               selectedSite={selectedSite}
               onSelectSite={handleSiteSelectFromSidebar}
+              onOpenLiveWall={() => setCurrentTab('live-wall')}
+              onOpenCommandPalette={(query) => {
+                setCommandPaletteInitialQuery(query || '');
+                setCommandPaletteOpen(true);
+              }}
+              onTriggerReconnect={(cameraName) => {
+                setReconnectTargetCamera(cameraName);
+                setReconnectModalOpen(true);
+              }}
             />
           ) : currentTab === 'live-wall' ? (
             <LiveWallView
@@ -387,6 +414,30 @@ export default function App() {
         isOpen={escalateModalOpen}
         onClose={() => setEscalateModalOpen(false)}
         onEscalateConfirm={handleEscalateConfirm}
+      />
+
+      {/* Universal AI Command Palette Modal (⌘K / Ctrl+K) */}
+      <CommandPaletteModal
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        onSelectFinding={(f) => setSelectedFinding(f)}
+        onNavigateTab={(tab) => setCurrentTab(tab)}
+        findings={findings}
+        initialQuery={commandPaletteInitialQuery}
+        onTriggerReconnect={(cameraName) => {
+          setReconnectTargetCamera(cameraName);
+          setReconnectModalOpen(true);
+        }}
+      />
+
+      {/* Operational Edge Reconnect Simulation Modal */}
+      <ReconnectModal
+        isOpen={reconnectModalOpen}
+        onClose={() => setReconnectModalOpen(false)}
+        cameraName={reconnectTargetCamera}
+        onSuccess={() => {
+          addToast('success', `${reconnectTargetCamera} Reconnected`, 'Edge RTSP stream synchronized with zero packet loss.');
+        }}
       />
 
       {/* Toast Notification Stack */}

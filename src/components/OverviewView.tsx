@@ -1,28 +1,34 @@
 import React, { useState, useMemo } from 'react';
 import { Finding } from '../types/findings';
-import { CCTVPlayer } from './CCTVPlayer';
+import { CameraStreamModal } from './CameraStreamModal';
+import { BriefingAuditModal } from './BriefingAuditModal';
 import {
+  Sparkles,
+  Radio,
+  ArrowUpRight,
   TrendingUp,
-  Cpu,
-  ShieldCheck,
+  CheckCircle2,
   AlertTriangle,
   AlertOctagon,
   Camera,
-  Activity,
-  ArrowUpRight,
-  Sparkles,
-  Workflow,
-  Radio,
-  CheckCircle2,
-  Building2,
-  Eye,
-  Server,
+  Cpu,
   Clock,
-  Flame,
-  Users,
-  ShieldAlert,
+  ArrowRight,
+  Search,
   Check,
+  Send,
+  ExternalLink,
+  ChevronRight,
+  Shield,
+  ShieldAlert,
+  Smartphone,
+  Eye,
+  Activity,
   Layers,
+  Building2,
+  RefreshCw,
+  SlidersHorizontal,
+  Info,
   Zap,
 } from 'lucide-react';
 
@@ -32,6 +38,9 @@ interface OverviewViewProps {
   onSelectFinding: (finding: Finding) => void;
   selectedSite?: string;
   onSelectSite?: (siteId: string) => void;
+  onOpenLiveWall?: () => void;
+  onOpenCommandPalette?: (query?: string) => void;
+  onTriggerReconnect?: (cameraName: string) => void;
 }
 
 export const OverviewView: React.FC<OverviewViewProps> = ({
@@ -40,787 +49,1582 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   onSelectFinding,
   selectedSite = 'all',
   onSelectSite,
+  onOpenLiveWall,
+  onOpenCommandPalette,
+  onTriggerReconnect,
 }) => {
-  const [activeSiteFilter, setActiveSiteFilter] = useState<string>(selectedSite);
-  const [activeTimeRange, setActiveTimeRange] = useState<'today' | '7d' | '30d'>('today');
-  const [selectedMetricCard, setSelectedMetricCard] = useState<string | null>(null);
+  // AI Copilot Query State
+  const [aiQueryInput, setAiQueryInput] = useState('');
+  const [activeCopilotAnswer, setActiveCopilotAnswer] = useState<{
+    query: string;
+    answer: string;
+    metric?: string;
+    actionLabel?: string;
+    actionType?: 'critical' | 'phone' | 'camera' | 'site';
+  } | null>(null);
+  const [isCopilotThinking, setIsCopilotThinking] = useState(false);
 
-  // Synchronize internal filter with parent if prop changes
-  React.useEffect(() => {
-    setActiveSiteFilter(selectedSite);
-  }, [selectedSite]);
+  // Camera Coverage Filter State
+  const [coverageFilter, setCoverageFilter] = useState<'all' | 'online' | 'offline'>('all');
 
-  const handleSiteChange = (siteId: string) => {
-    setActiveSiteFilter(siteId);
-    if (onSelectSite) {
-      onSelectSite(siteId);
-    }
+  // Camera Live Stream Modal State
+  const [cameraStreamModalOpen, setCameraStreamModalOpen] = useState(false);
+  const [selectedCameraForStream, setSelectedCameraForStream] = useState<string>('');
+
+  // Briefing Audit Modal State
+  const [briefingAuditModalOpen, setBriefingAuditModalOpen] = useState(false);
+
+  // Interactive timeline hover state
+  const [hoveredTimelineHour, setHoveredTimelineHour] = useState<number | null>(null);
+
+  // Suggested Prompts
+  const suggestedPrompts = [
+    'Why is phone use increasing?',
+    'Which camera needs attention?',
+    'Summarize today\'s critical findings',
+    'What changed since yesterday?',
+    'Which site has the most issues?',
+  ];
+
+  // Copilot query handler
+  const handleAskCopilot = (question: string) => {
+    setAiQueryInput(question);
+    setIsCopilotThinking(true);
+    setActiveCopilotAnswer(null);
+
+    setTimeout(() => {
+      setIsCopilotThinking(false);
+      const q = question.toLowerCase();
+
+      if (q.includes('phone')) {
+        setActiveCopilotAnswer({
+          query: question,
+          answer:
+            'Phone use is newly active today with 9 verified findings across Office and Godown (0 yesterday). The average duration was 5.2 seconds. Nevrixa automatically verified the posture signature and logged all 9 instances to the daily summary without requiring operator escalation.',
+          metric: '9 findings · 54% mean confidence',
+          actionLabel: 'Review phone use findings',
+          actionType: 'phone',
+        });
+      } else if (q.includes('camera') || q.includes('offline') || q.includes('attention')) {
+        setActiveCopilotAnswer({
+          query: question,
+          answer:
+            'Two cameras require immediate operational review: 1) Corridor Area has been dark for 740 hours (last frame at 16:24). 2) Godown CAM-02 has experienced 9 transient stream disconnects today, running at 4.5× yesterday\'s rate due to edge switch port buffer overrun.',
+          metric: 'Corridor Area: 740h offline · Godown: 4.5× drop rate',
+          actionLabel: 'Initiate Corridor Area Reconnect',
+          actionType: 'camera',
+        });
+      } else if (q.includes('critical')) {
+        setActiveCopilotAnswer({
+          query: question,
+          answer:
+            '2 critical findings were registered today: 1) Server Vault unauthorized perimeter breach (FND-1039) where a person entered without card swipe. 2) Zone C crowd density threshold exceeded (FND-1042) reaching 14 persons against a safe limit of 8.',
+          metric: '2 Critical Findings · 0 Unattended Breaches',
+          actionLabel: 'Inspect Critical Findings',
+          actionType: 'critical',
+        });
+      } else if (q.includes('changed') || q.includes('yesterday')) {
+        setActiveCopilotAnswer({
+          query: question,
+          answer:
+            'Compared to yesterday: 1) Findings increased from 2 to 20 (+900%) driven by new phone-use detector rollout (9 events) and Godown connection drops (9 events). 2) Critical threats rose from 0 to 2. 3) Autonomous handling increased to 30% without human intervention.',
+          metric: '+900% finding volume · 6 handled by Nevrixa',
+          actionLabel: 'View Findings Feed',
+          actionType: 'phone',
+        });
+      } else {
+        setActiveCopilotAnswer({
+          query: question,
+          answer:
+            'Chennai Facility is currently generating the highest telemetry volume with 14 of 20 findings (70%), led by Godown CAM-02 (11 events). Munich Facility recorded 4 findings including the prolonged Corridor Area dark spot. Singapore Hub remains nominal with zero open alerts.',
+          metric: 'Chennai: 14 findings · Munich: 4 · Singapore: 2',
+          actionLabel: 'Filter by Chennai Facility',
+          actionType: 'site',
+        });
+      }
+    }, 450);
   };
 
-  // Facility Site Definitions with Live Telemetry Metadata
-  const facilitySites = [
-    {
-      id: 'all',
-      name: 'All Facilities',
-      siteCode: 'GLOBAL',
-      city: 'Global Operations',
-      camerasTotal: 142,
-      camerasOnline: 142,
-      threatLevel: 'ELEVATED',
-      threatColor: 'text-amber-800 bg-amber-50 border-amber-300',
-      activeIncidents: 3,
-      edgeLatency: '14.2ms',
-      bandwidth: '840 Mbps',
-    },
-    {
-      id: 'chennai',
-      name: 'Chennai Facility',
-      siteCode: 'CHN-01',
-      city: 'Tamil Nadu, India',
-      camerasTotal: 48,
-      camerasOnline: 48,
-      threatLevel: 'ELEVATED',
-      threatColor: 'text-amber-800 bg-amber-50 border-amber-300',
-      activeIncidents: 2,
-      edgeLatency: '13.8ms',
-      bandwidth: '310 Mbps',
-    },
-    {
-      id: 'munich',
-      name: 'Munich Facility',
-      siteCode: 'MUC-02',
-      city: 'Bavaria, Germany',
-      camerasTotal: 36,
-      camerasOnline: 36,
-      threatLevel: 'GUARDED',
-      threatColor: 'text-red-800 bg-red-50 border-red-300',
-      activeIncidents: 1,
-      edgeLatency: '12.4ms',
-      bandwidth: '240 Mbps',
-    },
-    {
-      id: 'singapore',
-      name: 'Singapore Hub',
-      siteCode: 'SIN-03',
-      city: 'Tuas Logistics, SG',
-      camerasTotal: 32,
-      camerasOnline: 32,
-      threatLevel: 'NORMAL',
-      threatColor: 'text-[#016D5D] bg-[#E6F4F1] border-[#016D5D]/30',
-      activeIncidents: 0,
-      edgeLatency: '11.9ms',
-      bandwidth: '180 Mbps',
-    },
-    {
-      id: 'dallas',
-      name: 'Dallas Logistics',
-      siteCode: 'DFW-04',
-      city: 'Texas, USA',
-      camerasTotal: 26,
-      camerasOnline: 26,
-      threatLevel: 'NORMAL',
-      threatColor: 'text-[#016D5D] bg-[#E6F4F1] border-[#016D5D]/30',
-      activeIncidents: 0,
-      edgeLatency: '15.1ms',
-      bandwidth: '110 Mbps',
-    },
+  // 12 Camera Coverage Items
+  const cameraCoverageList = [
+    { name: 'Parking Area', status: 'Online', lastActive: '14d ago', isOnline: true },
+    { name: 'Loading Area', status: 'Online', lastActive: '22d ago', isOnline: true },
+    { name: 'Corridor Area', status: 'Offline', lastActive: '300d ago', isOnline: false, isWarning: true },
+    { name: 'Counter', status: 'Online', lastActive: '20d ago', isOnline: true },
+    { name: 'Shop Floor', status: 'Offline', lastActive: '2d ago', isOnline: false },
+    { name: 'Second Floor', status: 'Offline', lastActive: '2d ago', isOnline: false },
+    { name: 'Ground Floor', status: 'Online', lastActive: '2d ago', isOnline: true },
+    { name: 'Car Parking', status: 'Online', lastActive: '2d ago', isOnline: true },
+    { name: 'Warehouse', status: 'Online', lastActive: '14h ago', isOnline: true },
+    { name: 'Test', status: 'Online', lastActive: '14h ago', isOnline: true },
+    { name: 'Childcare Room 1', status: 'Online', lastActive: '14h ago', isOnline: true },
+    { name: 'Childcare Room 2', status: 'Online', lastActive: '14h ago', isOnline: true },
   ];
 
-  // Filter findings based on selected site
-  const filteredFindings = useMemo(() => {
-    if (activeSiteFilter === 'all') return findings;
-    if (activeSiteFilter === 'chennai') return findings.filter((f) => f.site.includes('Chennai'));
-    if (activeSiteFilter === 'munich') return findings.filter((f) => f.site.includes('Munich'));
-    if (activeSiteFilter === 'singapore') return findings.filter((f) => f.site.includes('Singapore'));
-    if (activeSiteFilter === 'dallas') return findings.filter((f) => f.site.includes('Dallas'));
-    return findings;
-  }, [findings, activeSiteFilter]);
+  const filteredCameraCoverage = cameraCoverageList.filter((cam) => {
+    if (coverageFilter === 'online') return cam.isOnline;
+    if (coverageFilter === 'offline') return !cam.isOnline;
+    return true;
+  });
 
-  const criticalFindings = useMemo(() => {
-    return filteredFindings.filter((f) => f.severity === 'CRITICAL' || f.statusCategory === 'CRITICAL');
-  }, [filteredFindings]);
-
-  // Display top 3 critical / high-priority findings in 1x3 grid
-  const topCriticalStream = useMemo(() => {
-    const criticals = filteredFindings.filter((f) => f.severity === 'CRITICAL');
-    if (criticals.length >= 3) return criticals.slice(0, 3);
-    return filteredFindings.slice(0, 3);
-  }, [filteredFindings]);
-
-  // Telemetry Metric Cards with SVG Sparklines matching StatusCards
-  const kpiCards = [
-    {
-      id: 'cameras',
-      label: 'Edge Camera Fleet',
-      caption: '100% Stream Uptime',
-      subCaption: 'Zero edge frame drops',
-      count: '142 / 142',
-      unit: 'ONLINE',
-      delta: '100% Active',
-      isIncrease: true,
-      colorTheme: {
-        border: 'border-[#016D5D]/30',
-        activeBorder: 'border-[#016D5D] ring-2 ring-[#016D5D]/20 bg-[#E6F4F1]',
-        hoverBorder: 'hover:border-[#016D5D]/60 hover:bg-[#E6F4F1]/30',
-        cardBg: 'bg-white',
-        iconBg: 'bg-[#E6F4F1] text-[#016D5D] border border-[#016D5D]/25',
-        textCount: 'text-neutral-900',
-        textLabel: 'text-[#016D5D]',
-        captionText: 'text-[#016D5D]/80',
-        lineColor: '#016D5D',
-        gradientStart: 'rgba(1, 109, 93, 0.22)',
-        gradientEnd: 'rgba(230, 244, 241, 0.02)',
-      },
-      linePath: 'M 0 65 C 50 60, 100 48, 150 42 C 200 36, 250 24, 300 16 C 320 12, 335 10, 340 8 L 340 80 L 0 80 Z',
-      strokePath: 'M 0 65 C 50 60, 100 48, 150 42 C 200 36, 250 24, 300 16 C 320 12, 335 10, 340 8',
-      icon: Camera,
-    },
-    {
-      id: 'precision',
-      label: 'AI Model Precision',
-      caption: 'Edge Inference Rate',
-      subCaption: 'Verified by operators',
-      count: '96.8%',
-      unit: 'CONFIDENCE',
-      delta: '+1.2% this week',
-      isIncrease: true,
-      colorTheme: {
-        border: 'border-[#00E9C9]/40',
-        activeBorder: 'border-[#016D5D] ring-2 ring-[#00E9C9]/30 bg-teal-50/50',
-        hoverBorder: 'hover:border-[#016D5D]/60 hover:bg-teal-50/30',
-        cardBg: 'bg-white',
-        iconBg: 'bg-[#016D5D] text-[#00E9C9] border border-[#016D5D]',
-        textCount: 'text-neutral-900',
-        textLabel: 'text-[#016D5D]',
-        captionText: 'text-neutral-600',
-        lineColor: '#016D5D',
-        gradientStart: 'rgba(0, 233, 201, 0.25)',
-        gradientEnd: 'rgba(230, 244, 241, 0.02)',
-      },
-      linePath: 'M 0 55 C 50 50, 90 40, 140 42 C 190 32, 230 22, 280 18 C 300 15, 320 12, 340 10 L 340 80 L 0 80 Z',
-      strokePath: 'M 0 55 C 50 50, 90 40, 140 42 C 190 32, 230 22, 280 18 C 300 15, 320 12, 340 10',
-      icon: Cpu,
-    },
-    {
-      id: 'automations',
-      label: 'Automated Dispatch',
-      caption: 'Mean Reaction Time',
-      subCaption: '4 rules triggered today',
-      count: '42s',
-      unit: 'RESPONSE',
-      delta: 'Target <60s',
-      isIncrease: false,
-      colorTheme: {
-        border: 'border-amber-300/80',
-        activeBorder: 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/70',
-        hoverBorder: 'hover:border-amber-400 hover:bg-amber-50/50',
-        cardBg: 'bg-white',
-        iconBg: 'bg-amber-100/90 text-amber-800 border border-amber-300',
-        textCount: 'text-amber-950',
-        textLabel: 'text-amber-900',
-        captionText: 'text-amber-700/90',
-        lineColor: '#D97706',
-        gradientStart: 'rgba(245, 158, 11, 0.22)',
-        gradientEnd: 'rgba(254, 243, 199, 0.02)',
-      },
-      linePath: 'M 0 52 C 40 48, 70 32, 110 38 C 150 44, 180 20, 220 26 C 260 32, 300 15, 340 18 L 340 80 L 0 80 Z',
-      strokePath: 'M 0 52 C 40 48, 70 32, 110 38 C 150 44, 180 20, 220 26 C 260 32, 300 15, 340 18',
-      icon: Workflow,
-    },
-    {
-      id: 'critical',
-      label: 'Critical Threats',
-      caption: 'Immediate Action',
-      subCaption: 'Perimeter & safety breaches',
-      count: String(criticalFindings.length),
-      unit: 'ACTIVE',
-      delta: `${criticalFindings.length} High Priority`,
-      isIncrease: true,
-      colorTheme: {
-        border: 'border-red-300/80',
-        activeBorder: 'border-red-500 ring-2 ring-red-500/20 bg-red-50/70',
-        hoverBorder: 'hover:border-red-400 hover:bg-red-50/50',
-        cardBg: 'bg-white',
-        iconBg: 'bg-red-100/90 text-red-800 border border-red-300',
-        textCount: 'text-red-950',
-        textLabel: 'text-red-900',
-        captionText: 'text-red-700/90',
-        lineColor: '#DC2626',
-        gradientStart: 'rgba(239, 68, 68, 0.24)',
-        gradientEnd: 'rgba(254, 226, 226, 0.02)',
-      },
-      linePath: 'M 0 60 C 50 58, 90 42, 130 52 C 170 62, 200 18, 240 14 C 280 10, 310 30, 340 22 L 340 80 L 0 80 Z',
-      strokePath: 'M 0 60 C 50 58, 90 42, 130 52 C 170 62, 200 18, 240 14 C 280 10, 310 30, 340 22',
-      icon: AlertOctagon,
-    },
-  ];
-
-  // Detector intelligence distribution
-  const detectorStats = [
-    { label: 'Crowd Density Limit', count: 14, percent: 96, category: 'Occupancy', icon: Users },
-    { label: 'Perimeter / Vault Breach', count: 9, percent: 98, category: 'Security', icon: ShieldAlert },
-    { label: 'Man Down & Worker Fall', count: 6, percent: 99, category: 'Safety', icon: Activity },
-    { label: 'Unattended Object Theft', count: 5, percent: 95, category: 'Loss Prevention', icon: AlertTriangle },
-    { label: 'Hazard & Thermal Spike', count: 3, percent: 92, category: 'Environmental', icon: Flame },
+  // 24h Timeline Buckets for Detection Activity
+  const timelineHours = [
+    { hour: '00:00', total: 0, critical: 0, attention: 0, info: 0 },
+    { hour: '02:00', total: 0, critical: 0, attention: 0, info: 0 },
+    { hour: '04:00', total: 0, critical: 0, attention: 0, info: 0 },
+    { hour: '06:00', total: 1, critical: 0, attention: 0, info: 1 },
+    { hour: '08:00', total: 2, critical: 0, attention: 1, info: 1 },
+    { hour: '09:00', total: 3, critical: 0, attention: 2, info: 1 },
+    { hour: '10:00', total: 4, critical: 2, attention: 1, info: 1 },
+    { hour: '11:00', total: 2, critical: 0, attention: 1, info: 1 },
+    { hour: '12:00', total: 3, critical: 0, attention: 1, info: 2 },
+    { hour: '14:00', total: 1, critical: 0, attention: 1, info: 0 },
+    { hour: '16:00', total: 1, critical: 0, attention: 1, info: 0 },
+    { hour: '18:00', total: 0, critical: 0, attention: 0, info: 0 },
+    { hour: '20:00', total: 1, critical: 0, attention: 1, info: 0 },
+    { hour: '22:00', total: 2, critical: 0, attention: 1, info: 1 },
+    { hour: '23:00', total: 0, critical: 0, attention: 0, info: 0 },
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 pb-12 font-sans max-w-[1580px] mx-auto">
       {/* 
-        STEP 1: OVERVIEW TITLE + SUBHEADING 
-        With full-width line below text using primary color (#016D5D)
+        ==================================================
+        SECTION 1: PAGE HEADER & SYSTEM STATUS BAR
+        ==================================================
       */}
-      <div className="pb-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#000000] font-sans">
-              Overview
-            </h1>
-            <p className="text-xs text-neutral-600 mt-1 font-medium">
-              Unified AI edge vision telemetry, cross-facility health metrics, and automated threat response.
-            </p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 border-b border-[#E5E7EB]">
+        <div>
+          <div className="text-xs font-semibold text-[#016D5D] tracking-wide uppercase font-mono">
+            Command Center · Central Operations
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-[#E5E7EB] rounded-md shadow-2xs text-[11px] font-mono text-neutral-600">
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#000000] mt-0.5">
+            Good morning
+          </h1>
+          <p className="text-xs text-neutral-500 mt-0.5 font-medium">
+            Friday, October 2 · Autonomous video perception and operational intelligence
+          </p>
+
+          {/* Compact Telemetry Status Line */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2.5 text-xs text-neutral-600 font-mono">
+            <div className="flex items-center gap-1.5 font-semibold text-neutral-900">
               <span className="w-2 h-2 rounded-full bg-[#00E9C9] animate-pulse" />
-              <span>142/142 Edge Feeds Active</span>
+              <span>All systems operational</span>
             </div>
-            <button
-              type="button"
-              onClick={onNavigateToFindings}
-              className="px-3 py-1.5 text-xs font-semibold text-white bg-[#016D5D] hover:bg-[#01584b] rounded-md transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
-            >
-              <span>Findings Feed</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
-            </button>
+            <span className="text-neutral-300">|</span>
+            <div className="flex items-center gap-1">
+              <span className="font-semibold text-neutral-900">15 / 15</span> cameras online
+            </div>
+            <span className="text-neutral-300">|</span>
+            <div className="flex items-center gap-1">
+              <span className="font-semibold text-neutral-900">3</span> sites monitored
+            </div>
+            <span className="text-neutral-300">|</span>
+            <div className="text-neutral-500">
+              Last sync: <span className="text-neutral-800 font-medium">12:08 PM</span>
+            </div>
           </div>
         </div>
-        {/* Full-width line below the text fully using NEVRIXA primary color #016D5D */}
-        <div className="w-full h-[2px] bg-[#016D5D] mt-3.5" />
+
+        {/* Global CTA Actions */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => onOpenCommandPalette ? onOpenCommandPalette() : handleAskCopilot('Summarize today\'s critical findings')}
+            className="px-3.5 py-2 bg-[#016D5D] hover:bg-[#01584b] text-white rounded-lg text-xs font-semibold flex items-center gap-2 transition-all shadow-2xs cursor-pointer group"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#00E9C9] group-hover:rotate-12 transition-transform" />
+            <span>Ask Nevrixa</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onOpenLiveWall ? onOpenLiveWall() : onNavigateToFindings()}
+            className="px-3.5 py-2 bg-white hover:bg-[#F4F4F4] text-neutral-800 border border-[#E5E7EB] rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors shadow-2xs cursor-pointer"
+          >
+            <Radio className="w-3.5 h-3.5 text-[#016D5D]" />
+            <span>View live wall</span>
+          </button>
+        </div>
       </div>
 
       {/* 
-        STEP 2: RETAINED AI SUGGEST BOX (NEVRIXA INTELLIGENCE)
-        Global Operational Synthesis tailored for cross-facility overview
+        ==================================================
+        SECTION 2: AI DAILY BRIEFING & AUTONOMY SUMMARY
+        The most important area of the dashboard
+        ==================================================
       */}
-      <div className="bg-gradient-to-r from-[#016D5D]/8 via-[#00E9C9]/10 to-white border border-[#016D5D]/25 rounded-xl p-3.5 shadow-2xs relative transition-all">
-        <div className="flex items-start sm:items-center gap-3 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-[#016D5D] text-white flex items-center justify-center shrink-0 shadow-xs">
-            <Sparkles className="w-4 h-4 text-[#00E9C9]" />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+        {/* Large AI Briefing Card (8 Columns) */}
+        <div className="lg:col-span-8 bg-white border border-[#E5E7EB] rounded-xl p-5 sm:p-6 shadow-2xs flex flex-col justify-between relative overflow-hidden">
+          {/* Subtle brand tint glow top right */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-radial from-[#8FF2E2]/15 to-transparent pointer-events-none" />
+
+          <div>
+            {/* Header with AI Pill */}
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-md bg-[#E6F4F1] text-[#016D5D] flex items-center justify-center">
+                  <Sparkles className="w-3.5 h-3.5 text-[#016D5D]" />
+                </div>
+                <span className="text-xs font-semibold text-neutral-800 uppercase tracking-wider font-mono">
+                  Today's briefing
+                </span>
+              </div>
+              <span className="text-[11px] font-mono text-[#016D5D] bg-[#E6F4F1] border border-[#016D5D]/20 px-2 py-0.5 rounded-full font-medium">
+                Autonomous Perception Active
+              </span>
+            </div>
+
+            {/* High-confidence bold statement */}
+            <div className="text-xl sm:text-2xl font-semibold text-[#000000] tracking-tight leading-snug">
+              20 things happened.<br />
+              <span className="text-neutral-500 font-normal">All of them have been reviewed.</span>
+            </div>
+
+            {/* Chronological Activity Stream */}
+            <div className="mt-5 space-y-2 border-t border-[#F0F0F0] pt-4">
+              <div className="text-[11px] font-mono text-neutral-600 uppercase tracking-wider mb-2">
+                Chronological Review Stream
+              </div>
+
+              {/* Item 1 */}
+              <div
+                onClick={() => {
+                  const f = findings.find((x) => x.title.toLowerCase().includes('phone'));
+                  if (f) onSelectFinding(f);
+                }}
+                className="flex items-center justify-between p-2 rounded-lg hover:bg-[#F9FAFB] border border-transparent hover:border-[#E5E7EB] transition-colors cursor-pointer group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-xs font-mono text-neutral-600 shrink-0 w-12">12:08</span>
+                  <span className="text-xs font-semibold text-neutral-900 shrink-0 w-16">Office</span>
+                  <span className="text-xs text-neutral-600 truncate">
+                    Logged usage in the daily summary
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 ml-2">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#E6F4F1] text-[#016D5D] font-medium border border-[#016D5D]/20">
+                    AI reviewed
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-neutral-300 group-hover:text-neutral-600 transition-colors" />
+                </div>
+              </div>
+
+              {/* Item 2 */}
+              <div
+                onClick={() => {
+                  const f = findings.find((x) => x.id === 'FND-1044');
+                  if (f) onSelectFinding(f);
+                }}
+                className="flex items-center justify-between p-2 rounded-lg hover:bg-[#F9FAFB] border border-transparent hover:border-[#E5E7EB] transition-colors cursor-pointer group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-xs font-mono text-neutral-600 shrink-0 w-12">23:45</span>
+                  <span className="text-xs font-semibold text-neutral-900 shrink-0 w-16">Godown</span>
+                  <span className="text-xs text-neutral-600 truncate">
+                    Reviewed, classified and logged automatically
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 ml-2">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#E6F4F1] text-[#016D5D] font-medium border border-[#016D5D]/20">
+                    AI reviewed
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-neutral-300 group-hover:text-neutral-600 transition-colors" />
+                </div>
+              </div>
+
+              {/* Item 3 */}
+              <div
+                onClick={() => {
+                  const f = findings.find((x) => x.id === 'FND-1044');
+                  if (f) onSelectFinding(f);
+                }}
+                className="flex items-center justify-between p-2 rounded-lg hover:bg-[#F9FAFB] border border-transparent hover:border-[#E5E7EB] transition-colors cursor-pointer group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-xs font-mono text-neutral-600 shrink-0 w-12">22:21</span>
+                  <span className="text-xs font-semibold text-neutral-900 shrink-0 w-16">Godown</span>
+                  <span className="text-xs text-neutral-600 truncate">
+                    Reviewed, classified and logged automatically
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 ml-2">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#E6F4F1] text-[#016D5D] font-medium border border-[#016D5D]/20">
+                    AI reviewed
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-neutral-300 group-hover:text-neutral-600 transition-colors" />
+                </div>
+              </div>
+
+              {/* Item 4 */}
+              <div
+                onClick={() => {
+                  const f = findings.find((x) => x.id === 'FND-1044');
+                  if (f) onSelectFinding(f);
+                }}
+                className="flex items-center justify-between p-2 rounded-lg hover:bg-[#F9FAFB] border border-transparent hover:border-[#E5E7EB] transition-colors cursor-pointer group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-xs font-mono text-neutral-600 shrink-0 w-12">22:08</span>
+                  <span className="text-xs font-semibold text-neutral-900 shrink-0 w-16">Godown</span>
+                  <span className="text-xs text-neutral-600 truncate">
+                    Logged usage in the daily summary
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 ml-2">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-medium border border-slate-200">
+                    Human reviewed
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-neutral-300 group-hover:text-neutral-600 transition-colors" />
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-0.5 min-w-0 flex-1">
+          {/* Actions at bottom of briefing */}
+          <div className="mt-5 pt-3.5 border-t border-[#F0F0F0] flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono font-bold tracking-wider text-[#016D5D] uppercase">
-                NEVRIXA INTELLIGENCE
-              </span>
-              <span className="text-neutral-300 text-xs">·</span>
-              <span className="text-[10px] font-mono text-neutral-500 font-medium">
-                Global Facility Synthesis
-              </span>
+              <button
+                type="button"
+                onClick={() => setBriefingAuditModalOpen(true)}
+                className="px-3 py-1.5 bg-[#016D5D] hover:bg-[#01584b] text-white rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <span>See what happened</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleAskCopilot('Summarize today\'s critical findings')}
+                className="px-3 py-1.5 bg-white hover:bg-neutral-50 text-neutral-800 border border-[#E5E7EB] rounded-md text-xs font-medium transition-colors cursor-pointer"
+              >
+                Ask a follow-up
+              </button>
             </div>
 
-            <p className="text-xs sm:text-sm font-semibold text-neutral-900 font-sans">
-              &ldquo;All 142 edge camera streams synchronizing at 60 FPS. 3 critical incidents detected across Chennai and Munich facilities require immediate operator verification.&rdquo;
-            </p>
-
-            <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-600 pt-0.5">
-              <span className="flex items-center gap-1 font-medium text-red-800 bg-red-50/80 px-1.5 py-0.2 rounded border border-red-200">
-                <AlertOctagon className="w-3 h-3 text-red-600 shrink-0" />
-                3 critical alerts pending
-              </span>
-              <span className="text-neutral-300">·</span>
-              <span className="text-[#016D5D] font-medium font-mono text-[11px]">14.2ms edge inference latency</span>
-              <span className="text-neutral-300">·</span>
-              <span className="text-neutral-700 font-medium font-mono text-[11px]">18 automated safety workflows armed</span>
+            <div className="text-[11px] font-mono text-neutral-500">
+              Confidence baseline: <span className="font-semibold text-neutral-800">96.8%</span>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* 
-        STEP 3: STATUS / KPI METRIC CARDS WITH SPARKLINES
-        Matching StatusCards styling with SVG trend curves and gradient fills
-      */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        {kpiCards.map((c) => {
-          const Icon = c.icon;
-          const isSelected = selectedMetricCard === c.id;
+        {/* Right-Side Summary Card: Autonomy — Today (4 Columns) */}
+        <div className="lg:col-span-4 bg-white border border-[#E5E7EB] rounded-xl p-5 sm:p-6 shadow-2xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-semibold text-neutral-800 uppercase tracking-wider font-mono">
+                Autonomy — Today
+              </span>
+              <span className="w-2 h-2 rounded-full bg-[#00E9C9]" />
+            </div>
 
-          return (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => setSelectedMetricCard(isSelected ? null : c.id)}
-              className={`w-full text-left p-3.5 sm:p-4 rounded-xl border relative overflow-hidden transition-all duration-150 cursor-pointer select-none flex flex-col justify-between shadow-2xs group ${
-                c.colorTheme.cardBg
-              } ${
-                isSelected
-                  ? c.colorTheme.activeBorder
-                  : `border-[#E5E7EB] ${c.colorTheme.hoverBorder}`
-              }`}
-            >
-              {/* Background Sparkline & Gradient Area */}
-              <div className="absolute inset-x-0 bottom-0 h-20 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
-                <svg
-                  viewBox="0 0 340 80"
-                  className="w-full h-full"
-                  preserveAspectRatio="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <defs>
-                    <linearGradient id={`overview-grad-${c.id}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={c.colorTheme.gradientStart} />
-                      <stop offset="100%" stopColor={c.colorTheme.gradientEnd} />
-                    </linearGradient>
-                  </defs>
-                  <path d={c.linePath} fill={`url(#overview-grad-${c.id})`} />
+            {/* Circular Gauge / Donut Visualization */}
+            <div className="flex items-center gap-5 my-3">
+              <div className="relative w-24 h-24 shrink-0">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                  {/* Background Track */}
                   <path
-                    d={c.strokePath}
+                    className="text-neutral-100"
+                    strokeWidth="3.8"
+                    stroke="currentColor"
                     fill="none"
-                    stroke={c.colorTheme.lineColor}
-                    strokeWidth="2.2"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  {/* Handled by Nevrixa (30% -> 6/20) */}
+                  <path
+                    className="text-[#00E9C9]"
+                    strokeDasharray="30, 100"
+                    strokeWidth="3.8"
                     strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="transition-all duration-300"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  {/* Reviewed by Human (70% -> 14/20) */}
+                  <path
+                    className="text-[#016D5D]"
+                    strokeDasharray="70, 100"
+                    strokeDashoffset="-30"
+                    strokeWidth="3.8"
+                    strokeLinecap="round"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   />
                 </svg>
-              </div>
-
-              {/* Card Header Content */}
-              <div className="relative z-10 flex items-start justify-between gap-2">
-                <div className="space-y-0.5">
-                  <span className={`text-xs font-bold uppercase tracking-wider font-mono block ${c.colorTheme.textLabel}`}>
-                    {c.label}
-                  </span>
-                  <span className="text-[11px] text-neutral-500 block">
-                    {c.caption}
-                  </span>
-                </div>
-
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-2xs ${c.colorTheme.iconBg}`}>
-                  <Icon className="w-4 h-4" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                  <span className="text-xl font-bold text-neutral-900 font-mono leading-none">20</span>
+                  <span className="text-[10px] text-neutral-500 font-mono mt-0.5">findings</span>
                 </div>
               </div>
 
-              {/* Big Numeric Metric & Delta */}
-              <div className="relative z-10 mt-3 pt-1 flex items-baseline justify-between">
-                <div className="flex items-baseline gap-1.5">
-                  <span className={`text-2xl font-bold font-mono tracking-tight ${c.colorTheme.textCount}`}>
-                    {c.count}
-                  </span>
-                  <span className="text-[10px] font-mono text-neutral-500 uppercase">
-                    {c.unit}
-                  </span>
-                </div>
-
-                <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-neutral-100/90 text-neutral-700 border border-neutral-200">
-                  {c.delta}
-                </span>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* 
-        STEP 4: OPERATIONAL FILTER & FACILITY QUICK CONTROLS
-        Cross-facility filter tabs and timeframe selectors
-      */}
-      <div className="bg-white border border-[#E5E7EB] rounded-lg p-2.5 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
-        {/* Facility Site Filter Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 max-w-full">
-          <span className="text-[11px] font-mono font-semibold text-neutral-500 uppercase tracking-wider mr-1 shrink-0">
-            Facilities:
-          </span>
-          {facilitySites.map((site) => {
-            const isActive = activeSiteFilter === site.id;
-            return (
-              <button
-                key={site.id}
-                type="button"
-                onClick={() => handleSiteChange(site.id)}
-                className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
-                  isActive
-                    ? 'bg-[#E6F4F1] text-[#016D5D] font-bold border border-[#016D5D]/40 shadow-2xs'
-                    : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 border border-transparent'
-                }`}
-              >
-                {isActive && <span className="w-1.5 h-1.5 rounded-full bg-[#00E9C9]" />}
-                <span>{site.name}</span>
-                <span className="text-[10px] font-mono opacity-70">
-                  ({site.id === 'all' ? '142' : site.camerasTotal})
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Timeframe Selector & Total Count */}
-        <div className="flex items-center gap-2 text-xs shrink-0">
-          <div className="flex items-center bg-neutral-100 p-0.5 rounded-md border border-[#E5E7EB]">
-            {(['today', '7d', '30d'] as const).map((period) => (
-              <button
-                key={period}
-                type="button"
-                onClick={() => setActiveTimeRange(period)}
-                className={`px-2 py-0.5 rounded text-[11px] font-mono transition-colors cursor-pointer ${
-                  activeTimeRange === period
-                    ? 'bg-white text-neutral-900 font-bold shadow-2xs'
-                    : 'text-neutral-500 hover:text-neutral-900'
-                }`}
-              >
-                {period === 'today' ? 'Today' : period === '7d' ? '7 Days' : '30 Days'}
-              </button>
-            ))}
-          </div>
-
-          <button
-            type="button"
-            onClick={onNavigateToFindings}
-            className="text-[11px] font-semibold text-[#016D5D] hover:underline flex items-center gap-1"
-          >
-            <span>View All ({filteredFindings.length})</span>
-            <ArrowUpRight className="w-3 h-3" />
-          </button>
-        </div>
-      </div>
-
-      {/* 
-        STEP 5A: MULTI-FACILITY STATUS MATRIX (HIGH-DENSITY ENTERPRISE TELEMETRY)
-      */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        {facilitySites.filter((s) => s.id !== 'all').map((site) => {
-          const isCurrentActive = activeSiteFilter === site.id;
-          return (
-            <div
-              key={site.id}
-              onClick={() => handleSiteChange(isCurrentActive ? 'all' : site.id)}
-              className={`p-3.5 bg-white rounded-lg border transition-all cursor-pointer shadow-2xs select-none ${
-                isCurrentActive
-                  ? 'border-[#016D5D] ring-2 ring-[#016D5D]/20 bg-[#F9FBFA]'
-                  : 'border-[#E5E7EB] hover:border-neutral-300 hover:bg-neutral-50/60'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div>
+              <div className="space-y-1.5 flex-1 min-w-0">
+                <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#00E9C9] shrink-0" />
-                    <h4 className="text-xs font-bold text-neutral-900 truncate">
-                      {site.name}
-                    </h4>
+                    <span className="w-2 h-2 rounded-full bg-[#00E9C9]" />
+                    <span className="text-neutral-700">Handled by Nevrixa</span>
                   </div>
-                  <span className="text-[10px] text-neutral-500 block mt-0.5 font-mono">
-                    {site.siteCode} · {site.city}
-                  </span>
+                  <span className="font-mono font-bold text-neutral-900">6</span>
                 </div>
 
-                <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border font-semibold ${site.threatColor}`}>
-                  {site.threatLevel}
-                </span>
-              </div>
-
-              <div className="mt-3 pt-2.5 border-t border-neutral-100 grid grid-cols-3 gap-2 text-center text-xs">
-                <div>
-                  <span className="text-[10px] font-mono text-neutral-400 block uppercase">Cameras</span>
-                  <span className="font-mono font-bold text-neutral-900 mt-0.5 block">
-                    {site.camerasOnline}/{site.camerasTotal}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[10px] font-mono text-neutral-400 block uppercase">Incidents</span>
-                  <span className={`font-mono font-bold mt-0.5 block ${site.activeIncidents > 0 ? 'text-red-600' : 'text-[#016D5D]'}`}>
-                    {site.activeIncidents} active
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[10px] font-mono text-neutral-400 block uppercase">Latency</span>
-                  <span className="font-mono font-medium text-neutral-700 mt-0.5 block">
-                    {site.edgeLatency}
-                  </span>
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[#016D5D]" />
+                    <span className="text-neutral-700">Reviewed by person</span>
+                  </div>
+                  <span className="font-mono font-bold text-neutral-900">14</span>
                 </div>
               </div>
             </div>
-          );
-        })}
-      </div>
 
-      {/* 
-        STEP 5B: RECENT CRITICAL INCIDENTS (1 X 3 CAMERA CARD GRID WITH REAL CCTV PLAYERS)
-        Following the exact 1x3 Grid layout and rich card details of the Finding page
-      */}
-      <div className="space-y-3 pt-2">
-        <div className="flex items-center justify-between pb-1 border-b border-[#E5E7EB]">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold font-mono tracking-wider text-neutral-900 uppercase">
-              Live Priority Detections
-            </span>
-            <span className="text-neutral-300">·</span>
-            <span className="text-xs font-mono text-red-600 font-semibold flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
-              {criticalFindings.length} Critical
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={onNavigateToFindings}
-            className="text-xs font-semibold text-[#016D5D] hover:underline flex items-center gap-1"
-          >
-            <span>Open Findings Feed</span>
-            <ArrowUpRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* 1 X 3 GRID OF RICH CAMERA CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {topCriticalStream.map((finding) => {
-            const isCritical = finding.severity === 'CRITICAL' || finding.statusCategory === 'CRITICAL';
-            const severityBadgeClass = isCritical
-              ? 'text-red-700 bg-red-50 border-red-300 font-bold'
-              : 'text-amber-800 bg-amber-50 border-amber-300 font-semibold';
-
-            return (
-              <div
-                key={finding.id}
-                onClick={() => onSelectFinding(finding)}
-                className="bg-white rounded-lg border border-[#E5E7EB] hover:border-[#016D5D] transition-all shadow-2xs hover:shadow-xs flex flex-col justify-between overflow-hidden cursor-pointer group"
-              >
-                {/* 1. CCTV Video Feed Viewport */}
-                <div className="p-3 pb-0">
-                  <div className="w-full aspect-video rounded-md overflow-hidden bg-neutral-950 relative border border-neutral-800 shadow-2xs">
-                    <CCTVPlayer finding={finding} compact autoPlay={true} />
-
-                    {/* Top Status Overlay Pill */}
-                    <div className="absolute top-2 left-2 flex items-center gap-1.5 pointer-events-none">
-                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                      <span className="text-[10px] font-mono font-bold text-white bg-black/75 px-1.5 py-0.5 rounded backdrop-blur-xs">
-                        REC · LIVE EDGE
-                      </span>
-                    </div>
-
-                    {/* Bottom AI Overlay Bar */}
-                    <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-2 pt-4 flex items-center justify-between pointer-events-none">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#00E9C9] shrink-0" />
-                        <span className="text-[10px] font-semibold text-white truncate font-mono">
-                          {finding.detectionLabel}
-                        </span>
-                      </div>
-                      <span className="text-[10px] font-mono font-bold text-[#00E9C9] tabular-nums shrink-0 ml-2">
-                        {finding.confidence.toFixed(1)}% match
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 2. High-Density Operational Data */}
-                <div className="p-3.5 flex-1 flex flex-col justify-between space-y-3">
-                  <div>
-                    {/* Header Row: Severity Pill, Monospaced ID & Location */}
-                    <div className="flex items-center justify-between gap-1.5 text-xs">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded border ${severityBadgeClass}`}>
-                          {finding.severity}
-                        </span>
-                        <span className="text-[11px] font-mono font-bold text-neutral-800 bg-neutral-100 px-1.5 py-0.2 rounded">
-                          {finding.id}
-                        </span>
-                      </div>
-
-                      <span className="text-[11px] font-mono text-neutral-500">
-                        {finding.camera.id}
-                      </span>
-                    </div>
-
-                    {/* Finding Title & Subtitle */}
-                    <div className="mt-2">
-                      <h3 className="text-sm font-bold text-neutral-900 group-hover:text-[#016D5D] transition-colors line-clamp-1">
-                        {finding.title}
-                      </h3>
-                      <p className="text-xs text-neutral-600 line-clamp-1 mt-0.5">
-                        {finding.subtitle}
-                      </p>
-                    </div>
-
-                    {/* 4-Field Telemetry Matrix */}
-                    <div className="mt-2.5 pt-2.5 border-t border-neutral-200 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
-                      <div>
-                        <span className="text-[10px] font-medium text-neutral-500 uppercase block leading-tight">Site</span>
-                        <span className="text-xs font-semibold text-neutral-900 truncate block mt-0.5">
-                          {finding.site}
-                        </span>
-                      </div>
-
-                      <div>
-                        <span className="text-[10px] font-medium text-neutral-500 uppercase block leading-tight">Detected</span>
-                        <span className="text-xs font-mono text-neutral-800 tabular-nums block mt-0.5">
-                          {finding.timestamp}
-                        </span>
-                      </div>
-
-                      <div>
-                        <span className="text-[10px] font-medium text-neutral-500 uppercase block leading-tight">Status</span>
-                        <span className="text-[11px] font-mono font-semibold text-neutral-800 block mt-0.5">
-                          {finding.status.replace('_', ' ')}
-                        </span>
-                      </div>
-
-                      <div>
-                        <span className="text-[10px] font-medium text-neutral-500 uppercase block leading-tight">Confidence</span>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-xs font-mono font-bold text-[#016D5D] tabular-nums">
-                            {finding.confidence.toFixed(1)}%
-                          </span>
-                          <div className="w-12 h-1.5 bg-neutral-200 rounded-full overflow-hidden shrink-0">
-                            <div
-                              className="h-full bg-[#016D5D] rounded-full"
-                              style={{ width: `${finding.confidence}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Operational AI Synthesis */}
-                    <div className="mt-2.5 p-2 rounded bg-neutral-50 border border-neutral-200 text-[11px] text-neutral-700 leading-snug">
-                      <span className="font-semibold text-neutral-900 font-mono text-[10px] uppercase block mb-0.5 text-[#016D5D]">
-                        AI Perception Assessment:
-                      </span>
-                      <span className="line-clamp-2">
-                        {finding.aiInterpretation}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Card Footer: Detail View Button */}
-                  <div className="pt-2.5 border-t border-neutral-200 flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onClick={() => onSelectFinding(finding)}
-                      className="px-3 py-1.5 text-xs font-semibold text-[#016D5D] hover:text-[#015246] bg-[#E6F4F1] hover:bg-[#8FF2E2]/50 border border-[#016D5D]/25 rounded-md transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs group/btn shrink-0"
-                    >
-                      <Eye className="w-3.5 h-3.5 transition-transform group-hover/btn:scale-110" />
-                      <span>Detail View</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 
-        STEP 5C: OPERATIONAL ARCHITECTURE BANNER (3 PILLARS) & DETECTOR DISTRIBUTION
-      */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-2">
-        {/* Left 2 Cols: Perception -> Understanding -> Action Architecture */}
-        <div className="lg:col-span-2 bg-white border border-[#E5E7EB] rounded-lg p-5 shadow-2xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-wider text-[#016D5D]">
-              <Sparkles className="w-3.5 h-3.5 text-[#00E9C9]" />
-              NEVRIXA OPERATIONAL ARCHITECTURE
-            </div>
-            <h3 className="text-lg font-bold text-neutral-900 mt-1">
-              Perception → Understanding → Action
-            </h3>
-            <p className="text-xs text-neutral-600 mt-0.5 max-w-xl">
-              Real-time video edge inference translating multi-camera telemetry into verified operational insights and automated facility response.
-            </p>
-
-            {/* The 3 Pillars Graphic Strip */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 pt-4 border-t border-neutral-100 text-xs">
-              <div className="p-3 bg-neutral-50 rounded-lg border border-neutral-200">
-                <span className="text-[10px] font-mono font-bold text-neutral-500 uppercase block">
-                  01 · PERCEPTION
+            {/* Status Breakdown Indicators */}
+            <div className="space-y-2 mt-4 pt-3 border-t border-[#F0F0F0] text-xs">
+              <div className="flex items-center justify-between py-1 px-2.5 rounded bg-[#F9FAFB] border border-[#E5E7EB]">
+                <span className="text-neutral-600">Action required</span>
+                <span className="font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-[11px]">
+                  0 action required
                 </span>
-                <span className="font-semibold text-neutral-900 block mt-0.5">Edge Vision Backbone</span>
-                <p className="text-[11px] text-neutral-600 mt-1 leading-relaxed">
-                  142 camera streams processed at 60 FPS with 14.2ms edge inference latency across 4 sites.
-                </p>
               </div>
-
-              <div className="p-3 bg-[#E6F4F1]/40 rounded-lg border border-[#016D5D]/20">
-                <span className="text-[10px] font-mono font-bold text-[#016D5D] uppercase block">
-                  02 · UNDERSTANDING
+              <div className="flex items-center justify-between py-1 px-2.5 rounded bg-[#F9FAFB] border border-[#E5E7EB]">
+                <span className="text-neutral-600">Waiting on you</span>
+                <span className="font-mono font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded text-[11px]">
+                  8 waiting on you
                 </span>
-                <span className="font-semibold text-neutral-900 block mt-0.5">Spatial & Context Fusion</span>
-                <p className="text-[11px] text-neutral-600 mt-1 leading-relaxed">
-                  Fusing optical vector tracking with badge access logs, schedules, and restricted tripwire boundaries.
-                </p>
-              </div>
-
-              <div className="p-3 bg-neutral-50 rounded-lg border border-neutral-200">
-                <span className="text-[10px] font-mono font-bold text-neutral-800 uppercase block">
-                  03 · ACTION
-                </span>
-                <span className="font-semibold text-neutral-900 block mt-0.5">Automated Workflows</span>
-                <p className="text-[11px] text-neutral-600 mt-1 leading-relaxed">
-                  Instant physical door interlock lockouts, security radio dispatch, and automated evidence retention.
-                </p>
               </div>
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500">
-            <span className="font-mono text-[11px]">Edge Engine v4.2.1-prod · AES-256 Encrypted</span>
+          <div className="mt-5 pt-3 border-t border-[#F0F0F0]">
             <button
               type="button"
               onClick={onNavigateToFindings}
-              className="text-[#016D5D] font-semibold hover:underline flex items-center gap-1"
+              className="text-xs font-semibold text-[#016D5D] hover:text-[#01584b] flex items-center justify-between w-full group cursor-pointer"
             >
-              <span>Explore All Incidents</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
+              <span>Automation log</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 
+        ==================================================
+        SECTION 3: AI QUERY BAR (COPILOT INTERACTION AREA)
+        ==================================================
+      */}
+      <div className="bg-white border border-[#E5E7EB] rounded-xl p-4 sm:p-5 shadow-2xs space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-[#016D5D]" />
+            <h2 className="text-sm font-semibold text-[#000000]">
+              Ask about your cameras or findings
+            </h2>
+          </div>
+          <span className="text-[11px] font-mono text-neutral-400">
+            Powered by NEVRIXA Intelligence
+          </span>
+        </div>
+
+        {/* Input Form */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (aiQueryInput.trim()) handleAskCopilot(aiQueryInput.trim());
+          }}
+          className="relative flex items-center"
+        >
+          <input
+            type="text"
+            value={aiQueryInput}
+            onChange={(e) => setAiQueryInput(e.target.value)}
+            placeholder="Ask Nevrixa anything about today's activity..."
+            className="w-full h-11 pl-4 pr-24 bg-[#F4F4F4] focus:bg-white border border-[#E5E7EB] focus:border-[#016D5D] rounded-lg text-xs text-neutral-900 placeholder:text-neutral-400 outline-none transition-all font-sans"
+          />
+          <button
+            type="submit"
+            disabled={!aiQueryInput.trim() || isCopilotThinking}
+            className="absolute right-2 px-3 py-1.5 bg-[#016D5D] hover:bg-[#01584b] disabled:bg-neutral-300 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:cursor-not-allowed"
+          >
+            {isCopilotThinking ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Send className="w-3.5 h-3.5" />
+            )}
+            <span>Analyze</span>
+          </button>
+        </form>
+
+        {/* Suggested Prompts Pills */}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-[11px] font-mono text-neutral-600 mr-1">Suggested:</span>
+          {suggestedPrompts.map((prompt) => (
+            <button
+              key={prompt}
+              type="button"
+              onClick={() => handleAskCopilot(prompt)}
+              className="px-2.5 py-1 rounded-full bg-[#F4F4F4] hover:bg-[#E6F4F1] border border-[#E5E7EB] hover:border-[#016D5D]/40 text-neutral-700 hover:text-[#016D5D] text-[11px] font-medium transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <span>{prompt}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Active Copilot Response Pane */}
+        {activeCopilotAnswer && (
+          <div className="mt-3 p-4 bg-[#E6F4F1] border border-[#016D5D]/25 rounded-lg space-y-2.5 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#00E9C9]" />
+                <span className="text-xs font-semibold text-[#016D5D]">
+                  Nevrixa Perception Response
+                </span>
+              </div>
+              {activeCopilotAnswer.metric && (
+                <span className="text-[11px] font-mono text-[#016D5D] bg-white/70 px-2 py-0.5 rounded border border-[#016D5D]/20">
+                  {activeCopilotAnswer.metric}
+                </span>
+              )}
+            </div>
+
+            <p className="text-xs text-neutral-800 leading-relaxed font-sans">
+              {activeCopilotAnswer.answer}
+            </p>
+
+            <div className="flex items-center justify-between pt-1">
+              {activeCopilotAnswer.actionLabel && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (activeCopilotAnswer.actionType === 'camera') {
+                      if (onTriggerReconnect) onTriggerReconnect('Corridor Area');
+                    } else if (activeCopilotAnswer.actionType === 'critical') {
+                      const f = findings.find((x) => x.severity === 'CRITICAL');
+                      if (f) onSelectFinding(f);
+                    } else if (activeCopilotAnswer.actionType === 'phone') {
+                      const f = findings.find((x) => x.title.toLowerCase().includes('phone'));
+                      if (f) onSelectFinding(f);
+                    } else {
+                      onNavigateToFindings();
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#016D5D] text-white rounded text-xs font-semibold hover:bg-[#01584b] transition-colors cursor-pointer"
+                >
+                  <span>{activeCopilotAnswer.actionLabel}</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setActiveCopilotAnswer(null)}
+                className="text-[11px] text-neutral-500 hover:text-neutral-800 underline cursor-pointer"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 
+        ==================================================
+        SECTION 4: TODAY SNAPSHOT (COMPACT METRICS ROW)
+        ==================================================
+      */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Critical */}
+        <div className="bg-white border border-[#E5E7EB] hover:border-red-300 rounded-xl p-4 shadow-2xs transition-all relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-red-900 uppercase tracking-wider font-mono">
+              Critical
+            </span>
+            <AlertOctagon className="w-4 h-4 text-red-600" />
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-bold font-mono text-neutral-900">2</span>
+            <span className="text-xs text-neutral-500">findings</span>
+          </div>
+          <div className="mt-1 flex items-center justify-between text-[11px] font-mono">
+            <span className="text-red-700 font-medium">+2 vs yesterday</span>
+            <span className="text-neutral-400">0 prior</span>
+          </div>
+          {/* Micro sparkline */}
+          <div className="mt-3 h-8 w-full">
+            <svg className="w-full h-full" viewBox="0 0 100 24" preserveAspectRatio="none">
+              <path
+                d="M 0,20 Q 25,18 50,14 T 75,8 T 100,2"
+                fill="none"
+                stroke="#DC2626"
+                strokeWidth="2"
+              />
+            </svg>
+          </div>
+        </div>
+
+        {/* Card 2: Findings */}
+        <div className="bg-white border border-[#E5E7EB] hover:border-[#016D5D]/50 rounded-xl p-4 shadow-2xs transition-all relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-[#016D5D] uppercase tracking-wider font-mono">
+              Findings
+            </span>
+            <Shield className="w-4 h-4 text-[#016D5D]" />
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-bold font-mono text-neutral-900">20</span>
+            <span className="text-xs text-neutral-500">detected</span>
+          </div>
+          <div className="mt-1 flex items-center justify-between text-[11px] font-mono">
+            <span className="text-[#016D5D] font-medium">+900% vs previous 24h</span>
+            <span className="text-neutral-400">2 prior</span>
+          </div>
+          {/* Micro sparkline */}
+          <div className="mt-3 h-8 w-full">
+            <svg className="w-full h-full" viewBox="0 0 100 24" preserveAspectRatio="none">
+              <path
+                d="M 0,22 Q 25,20 50,15 T 75,6 T 100,2"
+                fill="none"
+                stroke="#016D5D"
+                strokeWidth="2"
+              />
+            </svg>
+          </div>
+        </div>
+
+        {/* Card 3: Cameras online */}
+        <div className="bg-white border border-[#E5E7EB] hover:border-emerald-300 rounded-xl p-4 shadow-2xs transition-all relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-emerald-900 uppercase tracking-wider font-mono">
+              Cameras Online
+            </span>
+            <Camera className="w-4 h-4 text-emerald-600" />
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-bold font-mono text-neutral-900">15 / 15</span>
+            <span className="text-xs text-emerald-700 font-medium">100%</span>
+          </div>
+          <div className="mt-1 flex items-center justify-between text-[11px] font-mono">
+            <span className="text-emerald-700 font-medium">100% operational</span>
+            <span className="text-neutral-400">0 drops</span>
+          </div>
+          {/* Micro sparkline */}
+          <div className="mt-3 h-8 w-full">
+            <svg className="w-full h-full" viewBox="0 0 100 24" preserveAspectRatio="none">
+              <line x1="0" y1="12" x2="100" y2="12" stroke="#10B981" strokeWidth="2" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Card 4: Sites */}
+        <div className="bg-white border border-[#E5E7EB] hover:border-slate-400 rounded-xl p-4 shadow-2xs transition-all relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-neutral-800 uppercase tracking-wider font-mono">
+              Sites
+            </span>
+            <Building2 className="w-4 h-4 text-neutral-600" />
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-bold font-mono text-neutral-900">3</span>
+            <span className="text-xs text-neutral-500">active</span>
+          </div>
+          <div className="mt-1 flex items-center justify-between text-[11px] font-mono">
+            <span className="text-neutral-700 font-medium">All synchronized</span>
+            <span className="text-neutral-400">&lt;14ms latency</span>
+          </div>
+          {/* Micro pulse indicator */}
+          <div className="mt-3 flex items-center gap-1.5 h-8">
+            <span className="w-2 h-2 rounded-full bg-[#00E9C9] animate-ping" />
+            <span className="text-[11px] font-mono text-neutral-500">Live multi-site telemetry</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 
+        ==================================================
+        SECTION 5: IMPORTANT FINDINGS & RECOMMENDATIONS
+        "Nevrixa noticed" + "Recommended actions"
+        ==================================================
+      */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* Important Findings (7 Columns) */}
+        <div className="lg:col-span-7 bg-white border border-[#E5E7EB] rounded-xl p-5 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-[#000000]">
+                Nevrixa noticed
+              </h2>
+              <p className="text-xs text-neutral-500">
+                Highest-value signals and operational anomalies
+              </p>
+            </div>
+            <span className="text-[11px] font-mono text-neutral-400">3 signals</span>
+          </div>
+
+          <div className="space-y-2.5">
+            {/* Row 1: Critical */}
+            <div className="p-3.5 rounded-lg bg-[#FEF2F2] border border-red-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-red-600 text-white font-semibold">
+                    Critical
+                  </span>
+                  <span className="text-xs font-semibold text-neutral-900">
+                    Critical findings appeared this period
+                  </span>
+                </div>
+                <div className="text-[11px] text-neutral-600">
+                  <span className="font-mono font-medium">2 findings</span> · Server Vault door breach & Zone C crowd overflow
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const f = findings.find((x) => x.severity === 'CRITICAL');
+                  if (f) onSelectFinding(f);
+                }}
+                className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-semibold shrink-0 transition-colors cursor-pointer"
+              >
+                See critical
+              </button>
+            </div>
+
+            {/* Row 2: Attention Corridor Area */}
+            <div className="p-3.5 rounded-lg bg-[#FFFBEB] border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500 text-white font-semibold">
+                    Attention
+                  </span>
+                  <span className="text-xs font-semibold text-neutral-900">
+                    Corridor Area has gone dark
+                  </span>
+                </div>
+                <div className="text-[11px] text-neutral-600">
+                  <span className="font-mono font-medium">740h</span> since last coverage · Munich Facility CAM-11
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onTriggerReconnect) onTriggerReconnect('Corridor Area');
+                }}
+                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded text-xs font-semibold shrink-0 transition-colors cursor-pointer"
+              >
+                Reconnect
+              </button>
+            </div>
+
+            {/* Row 3: Attention Godown */}
+            <div className="p-3.5 rounded-lg bg-[#FFFBEB] border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500 text-white font-semibold">
+                    Attention
+                  </span>
+                  <span className="text-xs font-semibold text-neutral-900">
+                    Camera offline in Godown
+                  </span>
+                </div>
+                <div className="text-[11px] text-neutral-600">
+                  Running at <span className="font-mono font-medium">4.5× yesterday's rate</span> · Chennai Facility CAM-02
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const f = findings.find((x) => x.id === 'FND-1044');
+                  if (f) onSelectFinding(f);
+                }}
+                className="px-3 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded text-xs font-semibold shrink-0 transition-colors cursor-pointer"
+              >
+                Review camera offline
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Recommended Actions (5 Columns) */}
+        <div className="lg:col-span-5 bg-white border border-[#E5E7EB] rounded-xl p-5 shadow-2xs space-y-4">
+          <div>
+            <h2 className="text-sm font-semibold text-[#000000]">
+              Recommended actions
+            </h2>
+            <p className="text-xs text-neutral-500">
+              AI-generated operational dispatches
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {/* Recommendation 1 */}
+            <div className="p-3.5 rounded-lg border border-[#E5E7EB] hover:border-[#016D5D]/50 bg-[#F9FAFB] space-y-2 transition-all">
+              <div className="text-[10px] font-mono text-neutral-500 uppercase tracking-wider">
+                Camera coverage issue
+              </div>
+              <div className="text-xs font-semibold text-neutral-900">
+                Corridor Area is offline
+              </div>
+              <div className="text-[11px] text-neutral-600">
+                No coverage for 740h, since 16:24. Switch port handshake failed.
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onTriggerReconnect) onTriggerReconnect('Corridor Area');
+                }}
+                className="mt-1 text-xs font-semibold text-[#016D5D] hover:text-[#01584b] flex items-center gap-1 cursor-pointer"
+              >
+                <span>Reconnect</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Recommendation 2 */}
+            <div className="p-3.5 rounded-lg border border-[#E5E7EB] hover:border-[#016D5D]/50 bg-[#F9FAFB] space-y-2 transition-all">
+              <div className="text-[10px] font-mono text-neutral-500 uppercase tracking-wider">
+                Phone usage increased
+              </div>
+              <div className="text-xs font-semibold text-neutral-900">
+                Phone use is newly active
+              </div>
+              <div className="text-[11px] text-neutral-600">
+                9 findings during this period. Screen interactions logged across Office.
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const f = findings.find((x) => x.title.toLowerCase().includes('phone'));
+                  if (f) onSelectFinding(f);
+                }}
+                className="mt-1 text-xs font-semibold text-[#016D5D] hover:text-[#01584b] flex items-center gap-1 cursor-pointer"
+              >
+                <span>Review phone use</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 
+        ==================================================
+        SECTION 6: CAMERA COVERAGE
+        "Coverage · Detection running" (12 Cards)
+        ==================================================
+      */}
+      <div className="bg-white border border-[#E5E7EB] rounded-xl p-5 shadow-2xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-[#000000]">
+                Coverage · Detection running
+              </h2>
+              <span className="w-2 h-2 rounded-full bg-[#00E9C9] animate-pulse" />
+            </div>
+            <p className="text-xs text-neutral-500">
+              Edge camera fleet health and streaming status
+            </p>
+          </div>
+
+          {/* Filter Pills */}
+          <div className="flex items-center gap-1 p-1 bg-[#F4F4F4] rounded-lg text-xs font-mono">
+            <button
+              type="button"
+              onClick={() => setCoverageFilter('all')}
+              className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+                coverageFilter === 'all' ? 'bg-white text-neutral-900 font-semibold shadow-2xs' : 'text-neutral-600'
+              }`}
+            >
+              All (12)
+            </button>
+            <button
+              type="button"
+              onClick={() => setCoverageFilter('online')}
+              className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+                coverageFilter === 'online' ? 'bg-white text-emerald-800 font-semibold shadow-2xs' : 'text-neutral-600'
+              }`}
+            >
+              Online (9)
+            </button>
+            <button
+              type="button"
+              onClick={() => setCoverageFilter('offline')}
+              className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+                coverageFilter === 'offline' ? 'bg-white text-red-800 font-semibold shadow-2xs' : 'text-neutral-600'
+              }`}
+            >
+              Offline (3)
             </button>
           </div>
         </div>
 
-        {/* Right 1 Col: AI Detector Distribution & Health */}
-        <div className="bg-white border border-[#E5E7EB] rounded-lg p-5 shadow-2xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-neutral-900 uppercase font-mono tracking-wider">
-                Detector Fleet Status
-              </span>
-              <span className="text-[10px] font-mono text-[#016D5D] bg-[#E6F4F1] px-1.5 py-0.5 rounded font-semibold">
-                ALL ACTIVE
-              </span>
+        {/* 12 Compact Cards Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          {filteredCameraCoverage.map((cam) => (
+            <div
+              key={cam.name}
+              onClick={() => {
+                if (cam.isOnline) {
+                  setSelectedCameraForStream(cam.name);
+                  setCameraStreamModalOpen(true);
+                } else if (onTriggerReconnect) {
+                  onTriggerReconnect(cam.name);
+                }
+              }}
+              className={`p-3 rounded-lg border text-left transition-all cursor-pointer ${
+                !cam.isOnline
+                  ? 'bg-[#FEF2F2]/40 border-red-200 hover:border-red-400'
+                  : 'bg-[#F9FAFB] border-[#E5E7EB] hover:border-[#016D5D]/50 hover:bg-[#E6F4F1]/20'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    cam.isOnline ? 'bg-emerald-500' : cam.isWarning ? 'bg-amber-500' : 'bg-red-500'
+                  }`}
+                />
+                <span className="text-[10px] font-mono text-neutral-600">
+                  {cam.lastActive}
+                </span>
+              </div>
+              <div className="text-xs font-semibold text-neutral-900 truncate">
+                {cam.name}
+              </div>
+              <div className="text-[11px] font-mono mt-0.5 flex items-center justify-between">
+                <span className={cam.isOnline ? 'text-emerald-700' : 'text-red-700 font-semibold'}>
+                  {cam.status}
+                </span>
+                {!cam.isOnline && (
+                  <span className="text-[10px] text-[#016D5D] hover:underline">
+                    Reconnect
+                  </span>
+                )}
+              </div>
             </div>
-            <p className="text-xs text-neutral-500 mt-1">
-              Active neural detection models and confidence thresholds.
-            </p>
+          ))}
+        </div>
+      </div>
 
-            <div className="space-y-3 mt-4">
-              {detectorStats.map((det) => {
-                const Icon = det.icon;
+      {/* 
+        ==================================================
+        SECTION 7: HANDLED BY NEVRIXA & DETECTION ACTIVITY
+        "Handled without you" + 24h Timeline
+        ==================================================
+      */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* Handled by Nevrixa (5 Columns) */}
+        <div className="lg:col-span-5 bg-white border border-[#E5E7EB] rounded-xl p-5 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-1.5">
+                <h2 className="text-sm font-semibold text-[#000000]">
+                  Handled without you
+                </h2>
+                <Check className="w-3.5 h-3.5 text-[#016D5D]" />
+              </div>
+              <p className="text-xs text-neutral-500">
+                Autonomous actions executed without operator intervention
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setBriefingAuditModalOpen(true)}
+              className="text-xs text-[#016D5D] font-semibold hover:underline cursor-pointer"
+            >
+              See all
+            </button>
+          </div>
+
+          <div className="space-y-2.5">
+            {/* Activity Item 1 */}
+            <div className="p-3 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-md bg-[#E6F4F1] text-[#016D5D] flex items-center justify-center shrink-0">
+                  <Smartphone className="w-3.5 h-3.5 text-[#016D5D]" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-neutral-900 truncate">
+                    Phone use for 5 seconds
+                  </div>
+                  <div className="text-[11px] text-neutral-500">
+                    Office · <span className="font-mono">1m ago</span>
+                  </div>
+                  <div className="text-[10px] text-neutral-600 truncate mt-0.5">
+                    Logged the usage in the daily summary
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 text-[11px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 shrink-0 font-medium">
+                <Check className="w-3 h-3 text-emerald-600" />
+                <span>Done</span>
+              </div>
+            </div>
+
+            {/* Activity Item 2 */}
+            <div className="p-3 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-md bg-[#E6F4F1] text-[#016D5D] flex items-center justify-center shrink-0">
+                  <Camera className="w-3.5 h-3.5 text-[#016D5D]" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-neutral-900 truncate">
+                    Camera offline
+                  </div>
+                  <div className="text-[11px] text-neutral-500">
+                    Godown · <span className="font-mono">12h ago</span>
+                  </div>
+                  <div className="text-[10px] text-neutral-600 truncate mt-0.5">
+                    Reviewed, classified and logged automatically
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 text-[11px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 shrink-0 font-medium">
+                <Check className="w-3 h-3 text-emerald-600" />
+                <span>Done</span>
+              </div>
+            </div>
+
+            {/* Activity Item 3 */}
+            <div className="p-3 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-md bg-[#E6F4F1] text-[#016D5D] flex items-center justify-center shrink-0">
+                  <Camera className="w-3.5 h-3.5 text-[#016D5D]" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-neutral-900 truncate">
+                    Camera offline
+                  </div>
+                  <div className="text-[11px] text-neutral-500">
+                    Godown · <span className="font-mono">13h ago</span>
+                  </div>
+                  <div className="text-[10px] text-neutral-600 truncate mt-0.5">
+                    Reviewed, classified and logged automatically
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 text-[11px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 shrink-0 font-medium">
+                <Check className="w-3 h-3 text-emerald-600" />
+                <span>Done</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Detection Activity (7 Columns) */}
+        <div className="lg:col-span-7 bg-white border border-[#E5E7EB] rounded-xl p-5 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-[#000000]">
+                Detection activity
+              </h2>
+              <div className="text-xs text-neutral-500 mt-0.5">
+                <span className="font-bold text-neutral-900 font-mono text-sm">20 findings, today</span> · Timeline distribution
+              </div>
+            </div>
+
+            {/* Legend */}
+            <div className="flex items-center gap-3 text-[11px] font-mono text-neutral-600">
+              <div className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-red-600" />
+                <span>Critical</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span>Attention</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-[#016D5D]" />
+                <span>Informational</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Timeline Visualizer with Vertical Bars */}
+          <div className="pt-3">
+            <div className="h-36 flex items-end justify-between gap-1.5 border-b border-[#E5E7EB] pb-2">
+              {timelineHours.map((slot, index) => {
+                const heightPct = slot.total > 0 ? (slot.total / 4) * 85 + 15 : 6;
+                const isHovered = hoveredTimelineHour === index;
+
                 return (
-                  <div key={det.label} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <Icon className="w-3.5 h-3.5 text-[#016D5D] shrink-0" />
-                        <span className="font-medium text-neutral-800 truncate text-[11px]">{det.label}</span>
+                  <div
+                    key={slot.hour}
+                    onMouseEnter={() => setHoveredTimelineHour(index)}
+                    onMouseLeave={() => setHoveredTimelineHour(null)}
+                    className="flex-1 flex flex-col items-center justify-end h-full group relative cursor-pointer"
+                  >
+                    {/* Tooltip */}
+                    {isHovered && slot.total > 0 && (
+                      <div className="absolute bottom-full mb-2 bg-neutral-900 text-white text-[10px] font-mono px-2 py-1 rounded shadow-lg whitespace-nowrap z-20">
+                        {slot.hour}: {slot.total} findings ({slot.critical} crit)
                       </div>
-                      <span className="font-mono text-[11px] font-bold text-neutral-900">{det.count}</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-[#016D5D] rounded-full transition-all"
-                        style={{ width: `${det.percent}%` }}
-                      />
-                    </div>
+                    )}
+
+                    {/* Stacked Vertical Bar */}
+                    <div
+                      style={{ height: `${heightPct}%` }}
+                      className={`w-full max-w-[18px] rounded-t transition-all ${
+                        slot.critical > 0
+                          ? 'bg-red-500 hover:bg-red-600'
+                          : slot.attention > 0
+                          ? 'bg-amber-400 hover:bg-amber-500'
+                          : slot.total > 0
+                          ? 'bg-[#016D5D] hover:bg-[#01584b]'
+                          : 'bg-neutral-100 hover:bg-neutral-200'
+                      }`}
+                    />
                   </div>
                 );
               })}
             </div>
-          </div>
 
-          <div className="mt-4 pt-3 border-t border-neutral-100 flex items-center justify-between text-[11px] text-neutral-500 font-mono">
-            <span>5 Model Families</span>
-            <span className="text-[#016D5D] font-semibold">96.8% Avg Precision</span>
+            {/* Time Labels */}
+            <div className="flex items-center justify-between text-[10px] font-mono text-neutral-600 mt-2">
+              <span>00:00</span>
+              <span>06:00</span>
+              <span>12:00</span>
+              <span>18:00</span>
+              <span>23:59</span>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* 
+        ==================================================
+        SECTION 8: SIGNALS TO WATCH
+        ==================================================
+      */}
+      <div className="bg-white border border-[#E5E7EB] rounded-xl p-5 shadow-2xs space-y-4">
+        <div>
+          <h2 className="text-sm font-semibold text-[#000000]">
+            Signals to watch
+          </h2>
+          <p className="text-xs text-neutral-500">
+            AI-identified macro patterns and operational recommendations
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Signal 1 */}
+          <div className="p-4 rounded-lg bg-[#F9FAFB] border border-[#E5E7EB] hover:border-[#016D5D]/40 transition-colors space-y-2 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-neutral-200 text-neutral-700 font-semibold uppercase">
+                  Coverage
+                </span>
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+              </div>
+              <div className="text-xs font-semibold text-neutral-900 mt-2">
+                Corridor Area offline for 740 hours
+              </div>
+              <div className="text-[11px] text-neutral-600 mt-1">
+                Dispatch technician to check PoE switch on Hub 2. Persistent blindspot in secondary egress.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (onTriggerReconnect) onTriggerReconnect('Corridor Area');
+              }}
+              className="mt-2 text-xs font-semibold text-[#016D5D] hover:underline flex items-center gap-1 cursor-pointer pt-2 border-t border-neutral-200/60"
+            >
+              <span>Reconnect Switch Port</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Signal 2 */}
+          <div className="p-4 rounded-lg bg-[#F9FAFB] border border-[#E5E7EB] hover:border-[#016D5D]/40 transition-colors space-y-2 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#E6F4F1] text-[#016D5D] font-semibold uppercase">
+                  Watch
+                </span>
+                <Activity className="w-3.5 h-3.5 text-[#016D5D]" />
+              </div>
+              <div className="text-xs font-semibold text-neutral-900 mt-2">
+                Godown is your busiest camera
+              </div>
+              <div className="text-[11px] text-neutral-600 mt-1">
+                Drove 55% of all findings today (11 of 20). Review sensitivity threshold on Godown CAM-02.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const f = findings.find((x) => x.id === 'FND-1044');
+                if (f) onSelectFinding(f);
+              }}
+              className="mt-2 text-xs font-semibold text-[#016D5D] hover:underline flex items-center gap-1 cursor-pointer pt-2 border-t border-neutral-200/60"
+            >
+              <span>Inspect Godown CAM-02</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Signal 3 */}
+          <div className="p-4 rounded-lg bg-[#F9FAFB] border border-[#E5E7EB] hover:border-[#016D5D]/40 transition-colors space-y-2 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold uppercase">
+                  Pattern
+                </span>
+                <Zap className="w-3.5 h-3.5 text-blue-600" />
+              </div>
+              <div className="text-xs font-semibold text-neutral-900 mt-2">
+                Camera offline is the most common finding
+              </div>
+              <div className="text-[11px] text-neutral-600 mt-1">
+                Accounts for 45% of total detections. Run network diagnostics across Godown VLAN switch infrastructure.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (onTriggerReconnect) onTriggerReconnect('Godown Storage');
+              }}
+              className="mt-2 text-xs font-semibold text-[#016D5D] hover:underline flex items-center gap-1 cursor-pointer pt-2 border-t border-neutral-200/60"
+            >
+              <span>Run Network Diagnostics</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 
+        ==================================================
+        SECTION 9: FINDINGS DISTRIBUTION & TRENDS
+        "How it distributed" + "Trends & comparisons"
+        ==================================================
+      */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* How it distributed (7 Columns) */}
+        <div className="lg:col-span-7 bg-white border border-[#E5E7EB] rounded-xl p-5 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-[#000000]">
+                How it distributed
+              </h2>
+              <p className="text-xs text-neutral-500">
+                Finding category breakdown across 20 events
+              </p>
+            </div>
+            <span className="text-[11px] font-mono text-neutral-400">4 Categories</span>
+          </div>
+
+          <div className="space-y-3">
+            {/* Category 1: Camera offline */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-neutral-900">Camera offline</span>
+                <div className="flex items-center gap-2 font-mono">
+                  <span className="text-neutral-500">45% of findings</span>
+                  <span className="font-bold text-neutral-900">9 findings</span>
+                  <span className="text-amber-800 text-[10px] bg-amber-50 px-1.5 py-0.2 rounded font-medium">+850%</span>
+                </div>
+              </div>
+              <div className="w-full h-2 bg-neutral-100 rounded-full overflow-hidden">
+                <div className="w-[45%] h-full bg-amber-500 rounded-full" />
+              </div>
+            </div>
+
+            {/* Category 2: Phone use */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-neutral-900">Phone use</span>
+                <div className="flex items-center gap-2 font-mono">
+                  <span className="text-neutral-500">45% of findings</span>
+                  <span className="font-bold text-neutral-900">9 findings</span>
+                  <span className="text-[#016D5D] text-[10px] bg-[#E6F4F1] px-1.5 py-0.2 rounded font-medium">New</span>
+                </div>
+              </div>
+              <div className="w-full h-2 bg-neutral-100 rounded-full overflow-hidden">
+                <div className="w-[45%] h-full bg-[#016D5D] rounded-full" />
+              </div>
+            </div>
+
+            {/* Category 3: Intrusion */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-neutral-900">Intrusion</span>
+                <div className="flex items-center gap-2 font-mono">
+                  <span className="text-neutral-500">5% of findings</span>
+                  <span className="font-bold text-neutral-900">1 finding</span>
+                  <span className="text-red-700 text-[10px] bg-red-50 px-1.5 py-0.2 rounded font-medium">Critical</span>
+                </div>
+              </div>
+              <div className="w-full h-2 bg-neutral-100 rounded-full overflow-hidden">
+                <div className="w-[5%] h-full bg-red-600 rounded-full" />
+              </div>
+            </div>
+
+            {/* Category 4: Too many people */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-neutral-900">Too many people</span>
+                <div className="flex items-center gap-2 font-mono">
+                  <span className="text-neutral-500">5% of findings</span>
+                  <span className="font-bold text-neutral-900">1 finding</span>
+                  <span className="text-red-700 text-[10px] bg-red-50 px-1.5 py-0.2 rounded font-medium">Critical</span>
+                </div>
+              </div>
+              <div className="w-full h-2 bg-neutral-100 rounded-full overflow-hidden">
+                <div className="w-[5%] h-full bg-red-600 rounded-full" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Trends & comparisons (5 Columns) */}
+        <div className="lg:col-span-5 bg-white border border-[#E5E7EB] rounded-xl p-5 shadow-2xs space-y-4">
+          <div>
+            <h2 className="text-sm font-semibold text-[#000000]">
+              Trends & comparisons
+            </h2>
+            <p className="text-xs text-neutral-500">
+              Operational period deltas vs previous 24h
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {/* Trend 1 */}
+            <div className="p-3 rounded-lg bg-[#F9FAFB] border border-[#E5E7EB] flex items-center justify-between">
+              <div>
+                <div className="text-xs font-semibold text-neutral-900">
+                  Phone use newly active
+                </div>
+                <div className="text-[11px] text-neutral-500 mt-0.5">
+                  Detector deployed at 08:00 AM
+                </div>
+              </div>
+              <div className="text-right font-mono">
+                <div className="text-xs font-bold text-[#016D5D]">0 → 9</div>
+                <div className="text-[10px] text-neutral-400">findings</div>
+              </div>
+            </div>
+
+            {/* Trend 2 */}
+            <div className="p-3 rounded-lg bg-[#F9FAFB] border border-[#E5E7EB] flex items-center justify-between">
+              <div>
+                <div className="text-xs font-semibold text-neutral-900">
+                  Critical threats elevated
+                </div>
+                <div className="text-[11px] text-neutral-500 mt-0.5">
+                  Server vault & Zone C crowd breach
+                </div>
+              </div>
+              <div className="text-right font-mono">
+                <div className="text-xs font-bold text-red-600">2 critical</div>
+                <div className="text-[10px] text-neutral-400">vs 0 yesterday</div>
+              </div>
+            </div>
+
+            {/* Trend 3 */}
+            <div className="p-3 rounded-lg bg-[#F9FAFB] border border-[#E5E7EB] flex items-center justify-between">
+              <div>
+                <div className="text-xs font-semibold text-neutral-900">
+                  Camera concentration
+                </div>
+                <div className="text-[11px] text-neutral-500 mt-0.5">
+                  Godown drove 55% of all findings
+                </div>
+              </div>
+              <div className="text-right font-mono">
+                <div className="text-xs font-bold text-neutral-900">11 of 20</div>
+                <div className="text-[10px] text-neutral-400">55% volume</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 
+        ==================================================
+        SECTION 10: FINDINGS BY CAMERA & DETECTOR RELIABILITY
+        ==================================================
+      */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* Findings by Camera Table (7 Columns) */}
+        <div className="lg:col-span-7 bg-white border border-[#E5E7EB] rounded-xl p-5 shadow-2xs space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-[#000000]">
+                Findings by camera
+              </h2>
+              <p className="text-xs text-neutral-500">
+                Detailed telemetry breakdown by stream source
+              </p>
+            </div>
+            <span className="text-[11px] font-mono text-neutral-400">6 cameras active</span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-[#E5E7EB] text-[10px] font-mono uppercase text-neutral-600">
+                  <th className="pb-2 font-medium">Camera</th>
+                  <th className="pb-2 font-medium">Total</th>
+                  <th className="pb-2 font-medium">vs Prior</th>
+                  <th className="pb-2 font-medium">Most Common</th>
+                  <th className="pb-2 font-medium">Critical</th>
+                  <th className="pb-2 font-medium">Last Activity</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#F0F0F0]">
+                {/* Godown */}
+                <tr className="hover:bg-[#F9FAFB] transition-colors">
+                  <td className="py-2.5 font-semibold text-neutral-900">Godown</td>
+                  <td className="py-2.5 font-mono font-bold">11</td>
+                  <td className="py-2.5 font-mono text-amber-800 font-medium">+550%</td>
+                  <td className="py-2.5 text-neutral-600">Camera offline</td>
+                  <td className="py-2.5 font-mono text-neutral-400">0</td>
+                  <td className="py-2.5 font-mono text-neutral-500">12m ago</td>
+                </tr>
+
+                {/* Test */}
+                <tr className="hover:bg-[#F9FAFB] transition-colors">
+                  <td className="py-2.5 font-semibold text-neutral-900">Test</td>
+                  <td className="py-2.5 font-mono font-bold">4</td>
+                  <td className="py-2.5 font-mono text-[#016D5D] font-medium">+100%</td>
+                  <td className="py-2.5 text-neutral-600">Phone use</td>
+                  <td className="py-2.5 font-mono text-neutral-400">0</td>
+                  <td className="py-2.5 font-mono text-neutral-500">45m ago</td>
+                </tr>
+
+                {/* Warehouse */}
+                <tr className="hover:bg-[#F9FAFB] transition-colors">
+                  <td className="py-2.5 font-semibold text-neutral-900">Warehouse</td>
+                  <td className="py-2.5 font-mono font-bold">2</td>
+                  <td className="py-2.5 font-mono text-neutral-500">-20%</td>
+                  <td className="py-2.5 text-neutral-600">Intrusion</td>
+                  <td className="py-2.5 font-mono text-red-600 font-bold">1</td>
+                  <td className="py-2.5 font-mono text-neutral-500">2h ago</td>
+                </tr>
+
+                {/* Childcare Room 3 */}
+                <tr className="hover:bg-[#F9FAFB] transition-colors">
+                  <td className="py-2.5 font-semibold text-neutral-900">Childcare Room 3</td>
+                  <td className="py-2.5 font-mono font-bold">1</td>
+                  <td className="py-2.5 font-mono text-[#016D5D]">new</td>
+                  <td className="py-2.5 text-neutral-600">Too many people</td>
+                  <td className="py-2.5 font-mono text-red-600 font-bold">1</td>
+                  <td className="py-2.5 font-mono text-neutral-500">3h ago</td>
+                </tr>
+
+                {/* Childcare Room 1 */}
+                <tr className="hover:bg-[#F9FAFB] transition-colors">
+                  <td className="py-2.5 font-semibold text-neutral-900">Childcare Room 1</td>
+                  <td className="py-2.5 font-mono font-bold">1</td>
+                  <td className="py-2.5 font-mono text-neutral-500">stable</td>
+                  <td className="py-2.5 text-neutral-600">Phone use</td>
+                  <td className="py-2.5 font-mono text-neutral-400">0</td>
+                  <td className="py-2.5 font-mono text-neutral-500">5h ago</td>
+                </tr>
+
+                {/* Childcare Room 2 */}
+                <tr className="hover:bg-[#F9FAFB] transition-colors">
+                  <td className="py-2.5 font-semibold text-neutral-900">Childcare Room 2</td>
+                  <td className="py-2.5 font-mono font-bold">1</td>
+                  <td className="py-2.5 font-mono text-neutral-500">stable</td>
+                  <td className="py-2.5 text-neutral-600">Phone use</td>
+                  <td className="py-2.5 font-mono text-neutral-400">0</td>
+                  <td className="py-2.5 font-mono text-neutral-500">6h ago</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Detector Reliability (5 Columns) */}
+        <div className="lg:col-span-5 bg-white border border-[#E5E7EB] rounded-xl p-5 shadow-2xs space-y-4">
+          <div>
+            <h2 className="text-sm font-semibold text-[#000000]">
+              Detector reliability
+            </h2>
+            <p className="text-xs text-neutral-500">
+              Inference confidence metrics by neural model
+            </p>
+          </div>
+
+          <div className="space-y-3 text-xs">
+            {/* Row 1: Camera offline */}
+            <div className="p-3 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-neutral-900">Camera offline</span>
+                <span className="text-[10px] font-mono text-neutral-500">9 findings</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] font-mono text-neutral-500">
+                <span>Confidence not recorded</span>
+                <span>Telemetry check</span>
+              </div>
+            </div>
+
+            {/* Row 2: Phone use */}
+            <div className="p-3 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-neutral-900">Phone use</span>
+                <span className="text-[10px] font-mono text-neutral-500">9 findings</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] font-mono">
+                <span className="text-neutral-700 font-semibold">54% confidence</span>
+                <span className="text-[#016D5D]">NV-PHONE-V1.2</span>
+              </div>
+              <div className="w-full h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                <div className="w-[54%] h-full bg-[#016D5D] rounded-full" />
+              </div>
+            </div>
+
+            {/* Row 3: Intrusion */}
+            <div className="p-3 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-neutral-900">Intrusion</span>
+                <span className="text-[10px] font-mono text-red-600 font-bold">1 finding · 1 critical</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] font-mono">
+                <span className="text-emerald-700 font-semibold">89% confidence</span>
+                <span className="text-neutral-500">NV-INTRUSION-V3.8</span>
+              </div>
+              <div className="w-full h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                <div className="w-[89%] h-full bg-emerald-600 rounded-full" />
+              </div>
+            </div>
+
+            {/* Row 4: Too many people */}
+            <div className="p-3 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-neutral-900">Too many people</span>
+                <span className="text-[10px] font-mono text-red-600 font-bold">1 finding · 1 critical</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] font-mono">
+                <span className="text-emerald-700 font-semibold">100% confidence</span>
+                <span className="text-neutral-500">NV-CROWD-V2.6</span>
+              </div>
+              <div className="w-full h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                <div className="w-full h-full bg-emerald-600 rounded-full" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Camera Live Stream & Telemetry Preview Modal */}
+      <CameraStreamModal
+        isOpen={cameraStreamModalOpen}
+        onClose={() => setCameraStreamModalOpen(false)}
+        cameraName={selectedCameraForStream}
+        onOpenFindings={(camName) => {
+          onNavigateToFindings();
+        }}
+      />
+
+      {/* 20 Events Daily Briefing Audit Modal */}
+      <BriefingAuditModal
+        isOpen={briefingAuditModalOpen}
+        onClose={() => setBriefingAuditModalOpen(false)}
+        findings={findings}
+        onSelectFinding={(f) => onSelectFinding(f)}
+      />
     </div>
   );
 };
