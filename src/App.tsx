@@ -234,6 +234,14 @@ export default function App() {
           setCurrentTab(tab);
           if (tab === 'alerts') {
             setFilters((prev) => ({ ...prev, statusCategory: 'CRITICAL' }));
+          } else if (tab === 'review') {
+            setFilters((prev) => ({ ...prev, statusCategory: 'ATTENTION' }));
+          } else if (tab === 'finding' || tab === 'findings') {
+            setFilters((prev) => ({ ...prev, statusCategory: 'ALL' }));
+          } else if (tab === 'automations') {
+            setAutomationModalOpen(true);
+          } else if (tab === 'evidence') {
+            setExportModalOpen(true);
           }
         }}
         selectedSite={selectedSite}
@@ -242,7 +250,7 @@ export default function App() {
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         unreadAlertCount={findings.filter((f) => f.statusCategory === 'CRITICAL' && f.status !== 'RESOLVED').length}
         onSelectSubFinding={(cat) => {
-          setCurrentTab('findings');
+          setCurrentTab('finding');
           if (cat === 'ALL') {
             setFilters((prev) => ({ ...prev, statusCategory: 'ALL' }));
           } else if (cat === 'CRITICAL') {
@@ -278,7 +286,7 @@ export default function App() {
           {currentTab === 'overview' ? (
             <OverviewView
               findings={findings}
-              onNavigateToFindings={() => setCurrentTab('findings')}
+              onNavigateToFindings={() => setCurrentTab('finding')}
               onSelectFinding={(f) => setSelectedFinding(f)}
               selectedSite={selectedSite}
               onSelectSite={handleSiteSelectFromSidebar}

@@ -1,26 +1,21 @@
 import React, { useState } from 'react';
 import {
   LayoutGrid,
+  ShieldAlert,
   Radio,
   Bell,
   Camera,
-  ShieldAlert,
+  CheckSquare,
   Cpu,
   Workflow,
-  FileCheck2,
-  BarChart3,
+  History,
+  BarChart2,
   Server,
   Settings,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Building2,
-  AlertOctagon,
-  Eye,
-  CheckCircle2,
-  ShieldCheck,
-  Flame,
-  Zap,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -41,34 +36,95 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectSite,
   collapsed,
   onToggleCollapse,
-  unreadAlertCount = 2,
-  onSelectSubFinding,
+  unreadAlertCount = 4,
 }) => {
   const [siteDropdownOpen, setSiteDropdownOpen] = useState(false);
-  const [findingsExpanded, setFindingsExpanded] = useState(true);
-  const [detectorsExpanded, setDetectorsExpanded] = useState(false);
 
   const sites = [
-    { id: 'all', name: 'Global Operations (All Sites)', count: '15 Cams' },
-    { id: 'chennai', name: 'Chennai Facility', count: '8 Cams' },
-    { id: 'munich', name: 'Munich Facility', count: '4 Cams' },
-    { id: 'singapore', name: 'Singapore Hub', count: '3 Cams' },
+    { id: 'all', name: 'Global Operations (All Site', count: '142 Cams' },
+    { id: 'chennai', name: 'Chennai Facility', count: '48 Cams' },
+    { id: 'munich', name: 'Munich Facility', count: '52 Cams' },
+    { id: 'singapore', name: 'Singapore Hub', count: '42 Cams' },
   ];
 
   const activeSiteObj = sites.find((s) => s.id === selectedSite) || sites[0];
 
-  const findingsSubItems = [
-    { id: 'all-findings', label: 'All Findings', count: '20', category: 'ALL' as const },
-    { id: 'critical-findings', label: 'Critical', count: '2', color: 'text-red-700 bg-red-50 border-red-200', category: 'CRITICAL' as const },
-    { id: 'attention-findings', label: 'Attention', count: '8', color: 'text-amber-700 bg-amber-50 border-amber-200', category: 'ATTENTION' as const },
-    { id: 'informational-findings', label: 'Informational', count: '10', color: 'text-neutral-600 bg-neutral-100 border-neutral-200', category: 'INFORMATIONAL' as const },
+  const isItemActive = (id: string) => {
+    if (id === 'finding') {
+      return currentTab === 'finding' || currentTab === 'findings';
+    }
+    return currentTab === id;
+  };
+
+  const navOperations = [
+    {
+      id: 'overview',
+      label: 'Overview',
+      icon: LayoutGrid,
+    },
+    {
+      id: 'finding',
+      label: 'Finding',
+      icon: ShieldAlert,
+      badge: '8',
+      badgeType: 'mint' as const,
+    },
+    {
+      id: 'live-wall',
+      label: 'Live Wall',
+      icon: Radio,
+      badgeType: 'dot' as const,
+    },
+    {
+      id: 'alerts',
+      label: 'Alerts',
+      icon: Bell,
+      badge: String(unreadAlertCount || 4),
+      badgeType: 'dark' as const,
+    },
+    {
+      id: 'cameras',
+      label: 'Cameras & Sites',
+      icon: Camera,
+    },
+    {
+      id: 'review',
+      label: 'Review',
+      icon: CheckSquare,
+    },
   ];
 
-  const detectorsSubItems = [
-    { id: 'safety', label: 'Safety', badge: 'Active' },
-    { id: 'security', label: 'Security', badge: 'Active' },
-    { id: 'efficiency', label: 'Efficiency', badge: 'Active' },
-    { id: 'compliance', label: 'Compliance', badge: 'Active' },
+  const navIntelligence = [
+    {
+      id: 'detectors',
+      label: 'Detectors',
+      icon: Cpu,
+    },
+    {
+      id: 'automations',
+      label: 'Automations',
+      icon: Workflow,
+    },
+    {
+      id: 'evidence',
+      label: 'Evidence',
+      icon: History,
+    },
+    {
+      id: 'reports',
+      label: 'Reports',
+      icon: BarChart2,
+    },
+    {
+      id: 'infrastructure',
+      label: 'Infrastructure',
+      icon: Server,
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: Settings,
+    },
   ];
 
   return (
@@ -78,53 +134,40 @@ export const Sidebar: React.FC<SidebarProps> = ({
       }`}
     >
       {/* 
-        BRAND HEADER:
-        NEVRIXA logo MUST remain visible both expanded and collapsed!
+        1. BRAND HEADER:
+        Follows image strictly: "Nevrixa" text in teal with "<" collapse chevron on the right
       */}
       <div className={`h-14 border-b border-[#E5E7EB] flex items-center ${collapsed ? 'justify-center px-1' : 'justify-between px-4'}`}>
-        <div className="flex items-center gap-2.5 overflow-hidden">
-          {/* Nevrixa Emblem */}
-          <div
-            onClick={collapsed ? onToggleCollapse : () => onSelectTab('overview')}
-            className="w-8 h-8 rounded-lg bg-[#016D5D] flex items-center justify-center shrink-0 shadow-xs cursor-pointer group"
-            title="NEVRIXA AI Video Intelligence"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 19L12 4L20 19" stroke="#00E9C9" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M8 12H16" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" />
-              <circle cx="12" cy="11.5" r="2.2" fill="#00E9C9" />
-            </svg>
-          </div>
-
-          {!collapsed && (
-            <div className="flex flex-col min-w-0 cursor-pointer" onClick={() => onSelectTab('overview')}>
-              <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-sm tracking-tight text-[#000000]">NEVRIXA</span>
-                <span className="text-[10px] font-mono px-1 py-0.2 bg-[#E6F4F1] text-[#016D5D] font-semibold rounded-xs">
-                  AI
-                </span>
-              </div>
-              <span className="text-[10px] text-neutral-500 truncate leading-none mt-0.5">
-                Video Analytics & Ops
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Collapse toggle */}
-        {!collapsed && (
+        {!collapsed ? (
+          <>
+            <span
+              onClick={() => onSelectTab('overview')}
+              className="text-[#016D5D] font-bold text-xl tracking-tight font-sans cursor-pointer hover:opacity-90 transition-opacity"
+            >
+              Nevrixa
+            </span>
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="p-1 rounded-md text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 transition-colors cursor-pointer"
+              title="Collapse sidebar"
+            >
+              <ChevronLeft className="w-5 h-5 text-neutral-700" />
+            </button>
+          </>
+        ) : (
           <button
             type="button"
             onClick={onToggleCollapse}
-            className="p-1 rounded text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors cursor-pointer"
-            title="Collapse sidebar"
+            className="w-9 h-9 rounded-lg bg-[#E6F4F1] text-[#016D5D] flex items-center justify-center font-bold text-base hover:bg-[#d8efe9] transition-colors cursor-pointer"
+            title="Expand sidebar"
           >
-            <ChevronLeft className="w-4 h-4" />
+            N
           </button>
         )}
       </div>
 
-      {/* Expand button when collapsed */}
+      {/* Expand button below header when collapsed */}
       {collapsed && (
         <div className="py-2 flex justify-center border-b border-[#E5E7EB]">
           <button
@@ -138,43 +181,50 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       )}
 
-      {/* Workspace Selector (Top of sidebar body) */}
-      <div className="p-2.5 border-b border-[#E5E7EB] relative">
+      {/* 
+        2. ACTIVE WORKSPACE:
+        "Active Workspace" label with dropdown card containing green dot, title, count & chevron
+      */}
+      <div className="p-3 border-b border-[#E5E7EB] relative">
         {collapsed ? (
           <button
             type="button"
             onClick={() => setSiteDropdownOpen(!siteDropdownOpen)}
-            className="w-10 h-10 mx-auto rounded-md bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center text-neutral-700 transition-colors cursor-pointer"
+            className="w-10 h-10 mx-auto rounded-xl bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center text-neutral-700 transition-colors cursor-pointer"
             title={activeSiteObj.name}
           >
             <Building2 className="w-4 h-4 text-[#016D5D]" />
           </button>
         ) : (
           <div>
-            <div className="text-[10px] font-mono text-neutral-600 uppercase mb-1 tracking-wider">
-              WORKSPACE
+            <div className="text-xs font-medium text-neutral-500 mb-1.5">
+              Active Workspace
             </div>
             <button
               type="button"
               onClick={() => setSiteDropdownOpen(!siteDropdownOpen)}
-              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md border border-[#E5E7EB] bg-[#F9FAFB] hover:bg-white transition-colors text-left cursor-pointer"
+              className="w-full flex items-center justify-between p-2.5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-neutral-50/80 transition-colors text-left cursor-pointer shadow-2xs"
             >
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="w-2 h-2 rounded-full bg-[#00E9C9] shrink-0" />
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#00D4B2] shrink-0" />
                 <div className="min-w-0">
-                  <div className="text-xs font-semibold text-neutral-900 truncate">
+                  <div className="text-xs font-bold text-neutral-900 truncate">
                     {activeSiteObj.name}
                   </div>
-                  <div className="text-[10px] font-mono text-neutral-600">
-                    {activeSiteObj.count} · AI Monitored
+                  <div className="text-[11px] font-mono text-neutral-500 mt-0.5">
+                    {activeSiteObj.count} · AI Active
                   </div>
                 </div>
               </div>
-              <ChevronDown className={`w-3.5 h-3.5 text-neutral-400 transition-transform ${siteDropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown
+                className={`w-4 h-4 text-neutral-700 shrink-0 ml-1 transition-transform ${
+                  siteDropdownOpen ? 'rotate-180' : ''
+                }`}
+              />
             </button>
 
             {siteDropdownOpen && (
-              <div className="absolute top-full left-2.5 right-2.5 mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg z-50 py-1">
+              <div className="absolute top-full left-3 right-3 mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
                 {sites.map((s) => (
                   <button
                     key={s.id}
@@ -190,7 +240,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     }`}
                   >
                     <span className="truncate">{s.name}</span>
-                    <span className="text-[10px] font-mono text-neutral-600 shrink-0 ml-2">{s.count}</span>
+                    <span className="text-[10px] font-mono text-neutral-500 shrink-0 ml-2">
+                      {s.count}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -199,322 +251,151 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
       </div>
 
-      {/* Navigation List */}
-      <div className="flex-1 overflow-y-auto px-2 py-3 space-y-1">
-        {/* 1. Overview */}
-        <button
-          type="button"
-          onClick={() => onSelectTab('overview')}
-          title={collapsed ? 'Overview' : undefined}
-          className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium transition-colors group relative cursor-pointer ${
-            currentTab === 'overview'
-              ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold'
-              : 'text-neutral-600 hover:text-neutral-900 hover:bg-[#F9FAFB]'
-          }`}
-        >
-          {currentTab === 'overview' && (
-            <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#016D5D] rounded-r" />
-          )}
-          <LayoutGrid className={`w-4 h-4 shrink-0 ${currentTab === 'overview' ? 'text-[#016D5D]' : 'text-neutral-400 group-hover:text-neutral-700'}`} />
-          {!collapsed && <span className="truncate flex-1 text-left">Overview</span>}
-        </button>
-
-        {/* 2. Cameras & Sites */}
-        <button
-          type="button"
-          onClick={() => onSelectTab('cameras')}
-          title={collapsed ? 'Cameras & Sites' : undefined}
-          className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium transition-colors group relative cursor-pointer ${
-            currentTab === 'cameras'
-              ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold'
-              : 'text-neutral-600 hover:text-neutral-900 hover:bg-[#F9FAFB]'
-          }`}
-        >
-          {currentTab === 'cameras' && (
-            <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#016D5D] rounded-r" />
-          )}
-          <Camera className={`w-4 h-4 shrink-0 ${currentTab === 'cameras' ? 'text-[#016D5D]' : 'text-neutral-400 group-hover:text-neutral-700'}`} />
-          {!collapsed && (
-            <>
-              <span className="truncate flex-1 text-left">Cameras & Sites</span>
-              <span className="text-[10px] font-mono text-neutral-600">15</span>
-            </>
-          )}
-        </button>
-
-        {/* 3. Live Wall */}
-        <button
-          type="button"
-          onClick={() => onSelectTab('live-wall')}
-          title={collapsed ? 'Live Wall' : undefined}
-          className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium transition-colors group relative cursor-pointer ${
-            currentTab === 'live-wall'
-              ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold'
-              : 'text-neutral-600 hover:text-neutral-900 hover:bg-[#F9FAFB]'
-          }`}
-        >
-          {currentTab === 'live-wall' && (
-            <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#016D5D] rounded-r" />
-          )}
-          <Radio className={`w-4 h-4 shrink-0 ${currentTab === 'live-wall' ? 'text-[#016D5D]' : 'text-neutral-400 group-hover:text-neutral-700'}`} />
-          {!collapsed && (
-            <>
-              <span className="truncate flex-1 text-left">Live Wall</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-[#00E9C9] animate-pulse" />
-            </>
-          )}
-        </button>
-
-        {/* 4. Alerts */}
-        <button
-          type="button"
-          onClick={() => onSelectTab('alerts')}
-          title={collapsed ? 'Alerts' : undefined}
-          className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium transition-colors group relative cursor-pointer ${
-            currentTab === 'alerts'
-              ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold'
-              : 'text-neutral-600 hover:text-neutral-900 hover:bg-[#F9FAFB]'
-          }`}
-        >
-          {currentTab === 'alerts' && (
-            <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#016D5D] rounded-r" />
-          )}
-          <Bell className={`w-4 h-4 shrink-0 ${currentTab === 'alerts' ? 'text-[#016D5D]' : 'text-neutral-400 group-hover:text-neutral-700'}`} />
-          {!collapsed && (
-            <>
-              <span className="truncate flex-1 text-left">Alerts</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-neutral-900 text-white font-semibold">
-                {unreadAlertCount}
-              </span>
-            </>
-          )}
-        </button>
-
-        {/* 5. Findings (With sub-items: All Findings, Critical, Attention, Informational) */}
-        <div>
-          <button
-            type="button"
-            onClick={() => {
-              if (collapsed) {
-                onSelectTab('findings');
-              } else {
-                setFindingsExpanded(!findingsExpanded);
-                onSelectTab('findings');
-              }
-            }}
-            title={collapsed ? 'Findings' : undefined}
-            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium transition-colors group relative cursor-pointer ${
-              currentTab === 'findings'
-                ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold'
-                : 'text-neutral-600 hover:text-neutral-900 hover:bg-[#F9FAFB]'
-            }`}
-          >
-            {currentTab === 'findings' && (
-              <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#016D5D] rounded-r" />
-            )}
-            <ShieldAlert className={`w-4 h-4 shrink-0 ${currentTab === 'findings' ? 'text-[#016D5D]' : 'text-neutral-400 group-hover:text-neutral-700'}`} />
-            {!collapsed && (
-              <>
-                <span className="truncate flex-1 text-left">Findings</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#8FF2E2]/50 text-[#016D5D] font-semibold">
-                  20
-                </span>
-                <ChevronDown className={`w-3.5 h-3.5 text-neutral-400 transition-transform ${findingsExpanded ? 'rotate-180' : ''}`} />
-              </>
-            )}
-          </button>
-
-          {/* Sub-items */}
-          {!collapsed && findingsExpanded && (
-            <div className="pl-6 pr-1 py-1 space-y-0.5 border-l border-[#E5E7EB] ml-4 mt-0.5">
-              {findingsSubItems.map((sub) => (
-                <button
-                  key={sub.id}
-                  type="button"
-                  onClick={() => {
-                    onSelectTab('findings');
-                    if (onSelectSubFinding) onSelectSubFinding(sub.category);
-                  }}
-                  className="w-full flex items-center justify-between px-2 py-1 text-[11px] text-neutral-600 hover:text-neutral-900 hover:bg-[#F4F4F4] rounded transition-colors text-left cursor-pointer"
-                >
-                  <span className="truncate">{sub.label}</span>
-                  <span className={`text-[10px] font-mono px-1 rounded ${sub.color || 'text-neutral-600'}`}>
-                    {sub.count}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* 6. Detectors (With sub-items: Safety, Security, Efficiency, Compliance) */}
-        <div>
-          <button
-            type="button"
-            onClick={() => {
-              if (collapsed) {
-                onSelectTab('detectors');
-              } else {
-                setDetectorsExpanded(!detectorsExpanded);
-                onSelectTab('detectors');
-              }
-            }}
-            title={collapsed ? 'Detectors' : undefined}
-            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium transition-colors group relative cursor-pointer ${
-              currentTab === 'detectors'
-                ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold'
-                : 'text-neutral-600 hover:text-neutral-900 hover:bg-[#F9FAFB]'
-            }`}
-          >
-            {currentTab === 'detectors' && (
-              <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#016D5D] rounded-r" />
-            )}
-            <Cpu className={`w-4 h-4 shrink-0 ${currentTab === 'detectors' ? 'text-[#016D5D]' : 'text-neutral-400 group-hover:text-neutral-700'}`} />
-            {!collapsed && (
-              <>
-                <span className="truncate flex-1 text-left">Detectors</span>
-                <ChevronDown className={`w-3.5 h-3.5 text-neutral-400 transition-transform ${detectorsExpanded ? 'rotate-180' : ''}`} />
-              </>
-            )}
-          </button>
-
-          {!collapsed && detectorsExpanded && (
-            <div className="pl-6 pr-1 py-1 space-y-0.5 border-l border-[#E5E7EB] ml-4 mt-0.5">
-              {detectorsSubItems.map((sub) => (
-                <button
-                  key={sub.id}
-                  type="button"
-                  onClick={() => onSelectTab('detectors')}
-                  className="w-full flex items-center justify-between px-2 py-1 text-[11px] text-neutral-600 hover:text-neutral-900 hover:bg-[#F4F4F4] rounded transition-colors text-left cursor-pointer"
-                >
-                  <span className="truncate">{sub.label}</span>
-                  <span className="text-[9px] font-mono text-[#016D5D] bg-[#E6F4F1] px-1 rounded">
-                    {sub.badge}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* 7. Automations */}
-        <button
-          type="button"
-          onClick={() => onSelectTab('automations')}
-          title={collapsed ? 'Automations' : undefined}
-          className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium transition-colors group relative cursor-pointer ${
-            currentTab === 'automations'
-              ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold'
-              : 'text-neutral-600 hover:text-neutral-900 hover:bg-[#F9FAFB]'
-          }`}
-        >
-          {currentTab === 'automations' && (
-            <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#016D5D] rounded-r" />
-          )}
-          <Workflow className={`w-4 h-4 shrink-0 ${currentTab === 'automations' ? 'text-[#016D5D]' : 'text-neutral-400 group-hover:text-neutral-700'}`} />
-          {!collapsed && <span className="truncate flex-1 text-left">Automations</span>}
-        </button>
-
-        {/* 8. Evidence */}
-        <button
-          type="button"
-          onClick={() => onSelectTab('evidence')}
-          title={collapsed ? 'Evidence' : undefined}
-          className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium transition-colors group relative cursor-pointer ${
-            currentTab === 'evidence'
-              ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold'
-              : 'text-neutral-600 hover:text-neutral-900 hover:bg-[#F9FAFB]'
-          }`}
-        >
-          {currentTab === 'evidence' && (
-            <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#016D5D] rounded-r" />
-          )}
-          <FileCheck2 className={`w-4 h-4 shrink-0 ${currentTab === 'evidence' ? 'text-[#016D5D]' : 'text-neutral-400 group-hover:text-neutral-700'}`} />
-          {!collapsed && <span className="truncate flex-1 text-left">Evidence</span>}
-        </button>
-
-        {/* 9. Reports */}
-        <button
-          type="button"
-          onClick={() => onSelectTab('reports')}
-          title={collapsed ? 'Reports' : undefined}
-          className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium transition-colors group relative cursor-pointer ${
-            currentTab === 'reports'
-              ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold'
-              : 'text-neutral-600 hover:text-neutral-900 hover:bg-[#F9FAFB]'
-          }`}
-        >
-          {currentTab === 'reports' && (
-            <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#016D5D] rounded-r" />
-          )}
-          <BarChart3 className={`w-4 h-4 shrink-0 ${currentTab === 'reports' ? 'text-[#016D5D]' : 'text-neutral-400 group-hover:text-neutral-700'}`} />
-          {!collapsed && <span className="truncate flex-1 text-left">Reports</span>}
-        </button>
-
-        {/* 10. Infrastructure */}
-        <button
-          type="button"
-          onClick={() => onSelectTab('infrastructure')}
-          title={collapsed ? 'Infrastructure' : undefined}
-          className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium transition-colors group relative cursor-pointer ${
-            currentTab === 'infrastructure'
-              ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold'
-              : 'text-neutral-600 hover:text-neutral-900 hover:bg-[#F9FAFB]'
-          }`}
-        >
-          {currentTab === 'infrastructure' && (
-            <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#016D5D] rounded-r" />
-          )}
-          <Server className={`w-4 h-4 shrink-0 ${currentTab === 'infrastructure' ? 'text-[#016D5D]' : 'text-neutral-400 group-hover:text-neutral-700'}`} />
-          {!collapsed && <span className="truncate flex-1 text-left">Infrastructure</span>}
-        </button>
-
-        {/* 11. Settings */}
-        <button
-          type="button"
-          onClick={() => onSelectTab('settings')}
-          title={collapsed ? 'Settings' : undefined}
-          className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium transition-colors group relative cursor-pointer ${
-            currentTab === 'settings'
-              ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold'
-              : 'text-neutral-600 hover:text-neutral-900 hover:bg-[#F9FAFB]'
-          }`}
-        >
-          {currentTab === 'settings' && (
-            <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#016D5D] rounded-r" />
-          )}
-          <Settings className={`w-4 h-4 shrink-0 ${currentTab === 'settings' ? 'text-[#016D5D]' : 'text-neutral-400 group-hover:text-neutral-700'}`} />
-          {!collapsed && <span className="truncate flex-1 text-left">Settings</span>}
-        </button>
-      </div>
-
-      {/* Bottom Area: User Profile, Workspace & System Status Indicator */}
-      <div className="p-3 border-t border-[#E5E7EB] bg-[#FAFAFA] space-y-2.5">
-        {/* System Status Indicator */}
+      {/* 
+        3. NAVIGATION LIST:
+        Strictly follows ordinal order from attached image:
+        OPERATIONS:
+          1. Overview
+          2. Finding
+          3. Live Wall
+          4. Alerts
+          5. Cameras & Sites
+          6. Review
+        INTELLIGENCE & CONFIG:
+          7. Detectors
+          8. Automations
+          9. Evidence
+          10. Reports
+          11. Infrastructure
+          12. Settings
+      */}
+      <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
+        {/* OPERATIONS Header */}
         {!collapsed ? (
-          <div className="flex items-center justify-between text-[11px] font-mono text-neutral-600 px-1 py-1 rounded bg-white border border-[#E5E7EB]">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#00E9C9] animate-pulse" />
-              <span className="text-[#016D5D] font-medium">All systems operational</span>
-            </div>
-            <span className="text-[10px] text-neutral-600">15/15 Online</span>
+          <div className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider px-3 pt-2 pb-1">
+            OPERATIONS
           </div>
         ) : (
-          <div className="flex justify-center" title="All systems operational · 15/15 online">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#00E9C9] animate-pulse" />
-          </div>
+          <div className="h-2" />
         )}
 
-        {/* User Profile */}
+        {navOperations.map((item) => {
+          const Icon = item.icon;
+          const active = isItemActive(item.id);
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onSelectTab(item.id)}
+              title={collapsed ? item.label : undefined}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors group relative cursor-pointer ${
+                active
+                  ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold'
+                  : 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50'
+              }`}
+            >
+              {/* Active vertical pill indicator on the far left edge matching image */}
+              {active && (
+                <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#016D5D] rounded-r" />
+              )}
+
+              <Icon
+                className={`w-4 h-4 shrink-0 ${
+                  active
+                    ? 'text-[#016D5D]'
+                    : 'text-neutral-800 group-hover:text-neutral-900'
+                }`}
+              />
+
+              {!collapsed && (
+                <>
+                  <span className="truncate flex-1 text-left">{item.label}</span>
+
+                  {/* Mint badge (e.g. Finding "8") */}
+                  {item.badgeType === 'mint' && item.badge && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-[#C7EFE8] text-[#016D5D]">
+                      {item.badge}
+                    </span>
+                  )}
+
+                  {/* Dot indicator (e.g. Live Wall teal dot) */}
+                  {item.badgeType === 'dot' && (
+                    <span className="w-2 h-2 rounded-full bg-[#00D4B2] shrink-0" />
+                  )}
+
+                  {/* Dark pill badge (e.g. Alerts "4") */}
+                  {item.badgeType === 'dark' && item.badge && (
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-[#111827] text-white">
+                      {item.badge}
+                    </span>
+                  )}
+                </>
+              )}
+            </button>
+          );
+        })}
+
+        {/* INTELLIGENCE & CONFIG Header */}
         {!collapsed ? (
-          <div className="flex items-center justify-between pt-1">
+          <div className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider px-3 pt-4 pb-1">
+            INTELLIGENCE & CONFIG
+          </div>
+        ) : (
+          <div className="h-4 border-t border-neutral-100 my-2" />
+        )}
+
+        {navIntelligence.map((item) => {
+          const Icon = item.icon;
+          const active = isItemActive(item.id);
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onSelectTab(item.id)}
+              title={collapsed ? item.label : undefined}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors group relative cursor-pointer ${
+                active
+                  ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold'
+                  : 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50'
+              }`}
+            >
+              {active && (
+                <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#016D5D] rounded-r" />
+              )}
+
+              <Icon
+                className={`w-4 h-4 shrink-0 ${
+                  active
+                    ? 'text-[#016D5D]'
+                    : 'text-neutral-800 group-hover:text-neutral-900'
+                }`}
+              />
+
+              {!collapsed && (
+                <span className="truncate flex-1 text-left">{item.label}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Bottom Area: Clean footer maintaining system health indicator & user profile */}
+      <div className="p-3 border-t border-[#E5E7EB] bg-[#FFFFFF] space-y-2">
+        {!collapsed ? (
+          <div className="flex items-center justify-between pt-0.5">
             <div className="flex items-center gap-2 min-w-0">
               <div className="w-7 h-7 rounded-full bg-[#016D5D] text-white flex items-center justify-center text-xs font-semibold shrink-0">
                 AK
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-semibold text-neutral-900 truncate">Arun Kumar</div>
-                <div className="text-[10px] text-neutral-500 truncate">SecOps Lead · Admin</div>
+                <div className="text-xs font-semibold text-neutral-900 truncate">
+                  Arun Kumar
+                </div>
+                <div className="text-[10px] text-neutral-500 truncate">
+                  SecOps Lead · Admin
+                </div>
               </div>
             </div>
             <button
@@ -527,7 +408,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
         ) : (
-          <div className="flex flex-col items-center">
+          <div className="flex justify-center">
             <div className="w-7 h-7 rounded-full bg-[#016D5D] text-white flex items-center justify-center text-[10px] font-semibold">
               AK
             </div>

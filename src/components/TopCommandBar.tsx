@@ -47,8 +47,18 @@ export const TopCommandBar: React.FC<TopCommandBarProps> = ({
           <span>NEVRIXA</span>
           <span className="text-neutral-300">/</span>
         </div>
-        <span className="text-neutral-500 font-medium capitalize truncate">
-          {currentTab === 'overview' ? 'Overview' : currentTab.replace('-', ' ')}
+        <span className="text-neutral-500 font-medium truncate">
+          {currentTab === 'overview'
+            ? 'Overview'
+            : currentTab === 'finding' || currentTab === 'findings'
+            ? 'Finding'
+            : currentTab === 'live-wall'
+            ? 'Live Wall'
+            : currentTab === 'cameras'
+            ? 'Cameras & Sites'
+            : currentTab === 'review'
+            ? 'Review'
+            : currentTab.charAt(0).toUpperCase() + currentTab.slice(1).replace('-', ' ')}
         </span>
         <span className="text-neutral-300 hidden sm:inline">/</span>
         <div className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E6F4F1] border border-[#016D5D]/20 text-[#016D5D] text-[11px] font-medium">
