@@ -6,7 +6,7 @@ export const AiInsightStrip: React.FC = () => {
     <div className="bg-gradient-to-r from-[#016D5D]/8 via-[#00E9C9]/10 to-white border border-[#016D5D]/25 rounded-xl p-3.5 shadow-2xs relative transition-all">
       <div className="flex items-start sm:items-center gap-3 min-w-0">
         <div className="w-8 h-8 rounded-lg bg-[#016D5D] text-white flex items-center justify-center shrink-0 shadow-xs">
-          <Sparkles className="w-4 h-4 text-[#00E9C9]" />
+          <Sparkles className="w-4 h-4 text-white" />
         </div>
 
         <div className="space-y-0.5 min-w-0 flex-1">

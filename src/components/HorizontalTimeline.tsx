@@ -305,12 +305,12 @@ export const HorizontalTimeline: React.FC<HorizontalTimelineProps> = ({
               >
                 {downloadSuccess ? (
                   <>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#00E9C9]" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                     <span>Evidence Archived!</span>
                   </>
                 ) : (
                   <>
-                    <Download className="w-3.5 h-3.5 text-[#00E9C9]" />
+                    <Download className="w-3.5 h-3.5 text-white" />
                     <span>Download Archive #EV-{finding.id}</span>
                   </>
                 )}

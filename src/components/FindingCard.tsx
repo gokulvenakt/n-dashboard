@@ -143,7 +143,7 @@ export const FindingCard: React.FC<FindingCardProps> = ({
                 {finding.detectionLabel}
               </span>
             </div>
-            <span className="text-[10px] font-mono font-bold text-[#00E9C9] tabular-nums shrink-0 ml-2">
+            <span className="text-[10px] font-mono font-bold text-white tabular-nums shrink-0 ml-2">
               {finding.confidence.toFixed(1)}% match
             </span>
           </div>

@@ -34,7 +34,7 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [currentTab, setCurrentTab] = useState<string>('overview');
   const [selectedSite, setSelectedSite] = useState<string>('all');
-  
+
   // Initial default view = Grid View
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [groupBy, setGroupBy] = useState<GroupByOption>('date');
@@ -48,6 +48,10 @@ export default function App() {
   const [reconnectModalOpen, setReconnectModalOpen] = useState(false);
   const [reconnectTargetCamera, setReconnectTargetCamera] = useState('Corridor Area');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  // Dashboard view mode state
+  const [overviewMode, setOverviewMode] = useState<'standard' | 'customize'>('standard');
+  const [isCustomizing, setIsCustomizing] = useState(false);
 
   // Filtering state
   const [filters, setFilters] = useState<FilterState>({
@@ -158,8 +162,8 @@ export default function App() {
             newStatus === 'RESOLVED'
               ? 'RESOLVED'
               : f.severity === 'CRITICAL'
-              ? 'CRITICAL'
-              : 'ATTENTION';
+                ? 'CRITICAL'
+                : 'ATTENTION';
           return { ...f, status: newStatus, statusCategory: category };
         }
         return f;
@@ -265,9 +269,8 @@ export default function App() {
 
       {/* Main Workspace Canvas */}
       <main
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-200 ${
-          sidebarCollapsed ? 'ml-16' : 'ml-64'
-        }`}
+        className={`flex-1 flex flex-col min-w-0 transition-all duration-200 ${sidebarCollapsed ? 'ml-16' : 'ml-[220px]'
+          }`}
       >
         {/* Universal Top AI Command & Navigation Header */}
         <TopCommandBar
@@ -279,6 +282,21 @@ export default function App() {
           }}
           unreadCount={findings.filter((f) => f.statusCategory === 'CRITICAL' && f.status !== 'RESOLVED').length}
           onSelectSite={handleSiteSelectFromSidebar}
+          overviewMode={overviewMode}
+          onSetOverviewMode={(mode) => {
+            setOverviewMode(mode);
+            if (mode === 'standard') setIsCustomizing(false);
+            if (currentTab !== 'overview') setCurrentTab('overview');
+          }}
+          isCustomizing={isCustomizing}
+          onToggleCustomizing={() => {
+            setIsCustomizing((prev) => {
+              const next = !prev;
+              setOverviewMode(next ? 'customize' : 'standard');
+              return next;
+            });
+            if (currentTab !== 'overview') setCurrentTab('overview');
+          }}
         />
 
         {/* Dynamic Content Viewport Area */}
@@ -299,6 +317,10 @@ export default function App() {
                 setReconnectTargetCamera(cameraName);
                 setReconnectModalOpen(true);
               }}
+              overviewMode={overviewMode}
+              onSetOverviewMode={setOverviewMode}
+              isCustomizing={isCustomizing}
+              onToggleCustomizing={() => setIsCustomizing((prev) => !prev)}
             />
           ) : currentTab === 'live-wall' ? (
             <LiveWallView
@@ -307,7 +329,7 @@ export default function App() {
             />
           ) : (
             <div className="space-y-4">
-              
+
               {/* 
                 STEP 1: FINDING TITLE + SUBHEADING 
                 With full-width line below text using primary color (#016D5D)

@@ -266,51 +266,14 @@ export const GeminiAiAssistant: React.FC<GeminiAiAssistantProps> = ({
             {/* Hover Tooltip */}
             <div className="absolute bottom-full right-0 mb-3 pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-1 group-hover:translate-y-0 z-50">
               <div className="bg-neutral-950/95 text-white text-[11px] font-semibold py-1.5 px-3 rounded-lg shadow-xl border border-neutral-700/80 whitespace-nowrap flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-[#00E9C9] fill-[#00E9C9]" />
+                <Sparkles className="w-3.5 h-3.5 text-white fill-white" />
                 <span>NEVRIXA AI Assistant</span>
               </div>
             </div>
 
             {/* AI Assistant: Sparkle Shape with Logo placed in center (Replacing Circle) */}
             <div className="relative w-16 h-16 flex items-center justify-center">
-              {/* The 4-Point AI Sparkle Star SVG Shape */}
-              <svg
-                viewBox="0 0 64 64"
-                className="w-16 h-16 transition-all duration-300 group-hover:scale-110 group-hover:rotate-6 drop-shadow-[0_4px_16px_rgba(0,233,201,0.55)] group-hover:drop-shadow-[0_8px_24px_rgba(0,233,201,0.85)]"
-              >
-                <defs>
-                  <linearGradient id="aiSparkleBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#017F6D" />
-                    <stop offset="45%" stopColor="#016D5D" />
-                    <stop offset="100%" stopColor="#004D40" />
-                  </linearGradient>
-                  <linearGradient id="aiSparkleStrokeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#00E9C9" />
-                    <stop offset="50%" stopColor="#FFFFFF" />
-                    <stop offset="100%" stopColor="#00E9C9" />
-                  </linearGradient>
-                  <radialGradient id="aiSparkleCoreGlow" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor="#00E9C9" stopOpacity="0.45" />
-                    <stop offset="60%" stopColor="#00E9C9" stopOpacity="0.1" />
-                    <stop offset="100%" stopColor="#00E9C9" stopOpacity="0" />
-                  </radialGradient>
-                </defs>
 
-                {/* Main 4-Point AI Sparkle Star Silhouette */}
-                <path
-                  d="M 32 2 C 32 18.5 45.5 32 62 32 C 45.5 32 32 45.5 32 62 C 32 45.5 18.5 32 2 32 C 18.5 32 32 18.5 32 2 Z"
-                  fill="url(#aiSparkleBgGrad)"
-                  stroke="url(#aiSparkleStrokeGrad)"
-                  strokeWidth="2.2"
-                  strokeLinejoin="round"
-                />
-
-                {/* Core Radial Glow Highlight */}
-                <path
-                  d="M 32 2 C 32 18.5 45.5 32 62 32 C 45.5 32 32 45.5 32 62 C 32 45.5 18.5 32 2 32 C 18.5 32 32 18.5 32 2 Z"
-                  fill="url(#aiSparkleCoreGlow)"
-                />
-              </svg>
 
               {/* NEVRIXA Logo placed directly in the center of the Sparkle Shape */}
               <div className="absolute inset-0 m-auto w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center z-10 transition-transform duration-300 group-hover:scale-105 pointer-events-none">
@@ -344,8 +307,7 @@ export const GeminiAiAssistant: React.FC<GeminiAiAssistantProps> = ({
               : '0 25px 50px -12px rgba(1, 109, 93, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05)',
           }}
         >
-          {/* Top Accent Bar */}
-          <div className="h-1.5 w-full bg-gradient-to-r from-[#016D5D] via-[#00E9C9] via-indigo-500 to-[#016D5D] shrink-0" />
+
 
           {/* Header */}
           <div className="px-4 py-3 bg-gradient-to-r from-neutral-50 via-white to-[#F0FAF8] border-b border-neutral-200/80 flex items-center justify-between shrink-0">

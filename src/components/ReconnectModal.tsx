@@ -120,7 +120,7 @@ export const ReconnectModal: React.FC<ReconnectModalProps> = ({
         {/* Live Terminal Output */}
         <div className="p-4 bg-neutral-950 font-mono text-xs text-neutral-300 space-y-1.5 h-44 overflow-y-auto">
           <div className="flex items-center gap-2 text-neutral-500 pb-1 border-b border-neutral-800 text-[10px]">
-            <Terminal className="w-3 h-3 text-[#00E9C9]" />
+            <Terminal className="w-3 h-3 text-white" />
             <span>NEVRIXA EDGE DIAGNOSTIC TERMINAL</span>
           </div>
           {logs.map((log, idx) => (
@@ -128,7 +128,7 @@ export const ReconnectModal: React.FC<ReconnectModalProps> = ({
               key={idx}
               className={`leading-relaxed text-[11px] ${
                 log.includes('SUCCESS')
-                  ? 'text-[#00E9C9] font-bold'
+                  ? 'text-white font-bold'
                   : log.includes('Initiating')
                   ? 'text-neutral-400'
                   : 'text-neutral-200'

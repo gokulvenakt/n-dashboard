@@ -24,7 +24,7 @@ export const ToastContainer: React.FC<ToastProps> = ({ toasts, onDismiss }) => {
           {toast.type === 'alert' ? (
             <Radio className="w-4 h-4 text-red-400 shrink-0 mt-0.5 animate-pulse" />
           ) : toast.type === 'success' ? (
-            <CheckCircle2 className="w-4 h-4 text-[#00E9C9] shrink-0 mt-0.5" />
+            <CheckCircle2 className="w-4 h-4 text-white shrink-0 mt-0.5" />
           ) : (
             <Info className="w-4 h-4 text-[#8FF2E2] shrink-0 mt-0.5" />
           )}

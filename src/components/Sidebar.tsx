@@ -129,57 +129,69 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`fixed top-0 bottom-0 left-0 z-40 bg-[#FFFFFF] border-r border-[#E5E7EB] flex flex-col transition-all duration-200 select-none ${
-        collapsed ? 'w-16' : 'w-64'
-      }`}
+      className={`fixed top-0 bottom-0 left-0 z-40 bg-[#FFFFFF] border-r border-[#E5E7EB] flex flex-col transition-all duration-200 select-none shadow-[4px_0_24px_rgba(0,0,0,0.08),1px_0_4px_rgba(0,0,0,0.04),8px_0_32px_rgba(1,109,93,0.06)] ${collapsed ? 'w-16' : 'w-[220px]'
+        }`}
     >
       {/* 
         1. BRAND HEADER:
-        Follows image strictly: "Nevrixa" text in teal with "<" collapse chevron on the right
+        - Open collapse: Attached Nevrixa-Logo-Full_Color with tagline "Intelligence wherever it matters" in primary color (#016D5D)
+        - Close collapse: Attached SM_Logo-03 (no tagline)
+        - Collapse arrow: Right side of sidenav box
       */}
-      <div className={`h-14 border-b border-[#E5E7EB] flex items-center ${collapsed ? 'justify-center px-1' : 'justify-between px-4'}`}>
+      <div className={`relative border-b border-[#E5E7EB] flex items-center transition-all h-[72px] ${collapsed ? 'justify-center px-1' : 'py-2.5 px-3.5 justify-between'
+        }`}>
         {!collapsed ? (
           <>
-            <span
+            <div
+              className="flex flex-col cursor-pointer min-w-0 pr-2 group"
               onClick={() => onSelectTab('overview')}
-              className="text-[#016D5D] font-bold text-xl tracking-tight font-sans cursor-pointer hover:opacity-90 transition-opacity"
+              title="Nevrixa - Intelligence wherever it matters"
             >
-              Nevrixa
-            </span>
+              <img
+                src="/nevrixa-logo-full.png"
+                alt="Nevrixa"
+                className="h-8 w-auto max-w-[170px] object-contain object-left group-hover:opacity-90 transition-opacity"
+              />
+              <span className="text-[11px] font-semibold text-[#016D5D] tracking-tight mt-1 leading-tight select-none whitespace-nowrap">
+                Intelligence wherever it matters
+              </span>
+            </div>
+            {/* Collapse arrow right side of sidenav box */}
             <button
               type="button"
               onClick={onToggleCollapse}
-              className="p-1 rounded-md text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 transition-colors cursor-pointer"
+              className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white border border-[#E5E7EB] shadow-md flex items-center justify-center text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 transition-all cursor-pointer z-50 hover:scale-110"
               title="Collapse sidebar"
             >
-              <ChevronLeft className="w-5 h-5 text-neutral-700" />
+              <ChevronLeft className="w-3.5 h-3.5 text-neutral-700" />
             </button>
           </>
         ) : (
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            className="w-9 h-9 rounded-lg bg-[#E6F4F1] text-[#016D5D] flex items-center justify-center font-bold text-base hover:bg-[#d8efe9] transition-colors cursor-pointer"
-            title="Expand sidebar"
-          >
-            N
-          </button>
+          <div className="relative flex items-center justify-center w-full">
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="p-1 rounded-lg hover:bg-neutral-50 transition-colors cursor-pointer flex items-center justify-center"
+              title="Nevrixa (Expand sidebar)"
+            >
+              <img
+                src="/sm-logo-03.png"
+                alt="Nevrixa"
+                className="w-9 h-9 object-contain"
+              />
+            </button>
+            {/* Collapse arrow right side of sidenav box */}
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white border border-[#E5E7EB] shadow-md flex items-center justify-center text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 transition-all cursor-pointer z-50 hover:scale-110"
+              title="Expand sidebar"
+            >
+              <ChevronRight className="w-3.5 h-3.5 text-neutral-700" />
+            </button>
+          </div>
         )}
       </div>
-
-      {/* Expand button below header when collapsed */}
-      {collapsed && (
-        <div className="py-2 flex justify-center border-b border-[#E5E7EB]">
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            className="p-1.5 rounded-md text-neutral-500 hover:text-[#016D5D] hover:bg-[#E6F4F1] transition-colors cursor-pointer"
-            title="Expand sidebar"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      )}
 
       {/* 
         2. ACTIVE WORKSPACE:
@@ -206,7 +218,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className="w-full flex items-center justify-between p-2.5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-neutral-50/80 transition-colors text-left cursor-pointer shadow-2xs"
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#00D4B2] shrink-0" />
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-neutral-900 truncate">
                     {activeSiteObj.name}
@@ -217,9 +228,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               </div>
               <ChevronDown
-                className={`w-4 h-4 text-neutral-700 shrink-0 ml-1 transition-transform ${
-                  siteDropdownOpen ? 'rotate-180' : ''
-                }`}
+                className={`w-4 h-4 text-neutral-700 shrink-0 ml-1 transition-transform ${siteDropdownOpen ? 'rotate-180' : ''
+                  }`}
               />
             </button>
 
@@ -233,11 +243,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       onSelectSite(s.id);
                       setSiteDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${
-                      selectedSite === s.id
-                        ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold'
-                        : 'text-neutral-700 hover:bg-neutral-50'
-                    }`}
+                    className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${selectedSite === s.id
+                      ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold'
+                      : 'text-neutral-700 hover:bg-neutral-50'
+                      }`}
                   >
                     <span className="truncate">{s.name}</span>
                     <span className="text-[10px] font-mono text-neutral-500 shrink-0 ml-2">
@@ -253,30 +262,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* 
         3. NAVIGATION LIST:
-        Strictly follows ordinal order from attached image:
-        OPERATIONS:
-          1. Overview
-          2. Finding
-          3. Live Wall
-          4. Alerts
-          5. Cameras & Sites
-          6. Review
-        INTELLIGENCE & CONFIG:
-          7. Detectors
-          8. Automations
-          9. Evidence
-          10. Reports
-          11. Infrastructure
-          12. Settings
+        OPERATIONS & INTELLIGENCE & CONFIG
+        Uses Active Workspace font-face, font-size (text-xs), font-weight (font-medium), and color (text-neutral-500)
+        For collapse: a small border line is enough
       */}
       <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
-        {/* OPERATIONS Header */}
+        {/* Operations Header */}
         {!collapsed ? (
-          <div className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider px-3 pt-2 pb-1">
-            OPERATIONS
+          <div className="text-xs font-medium text-neutral-500 px-3 pt-2.5 pb-1 select-none">
+            Operation
           </div>
         ) : (
-          <div className="h-2" />
+          <div className="border-t border-[#E5E7EB] mx-2.5 my-2" />
         )}
 
         {navOperations.map((item) => {
@@ -289,11 +286,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               type="button"
               onClick={() => onSelectTab(item.id)}
               title={collapsed ? item.label : undefined}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors group relative cursor-pointer ${
-                active
-                  ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold'
-                  : 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50'
-              }`}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors group relative cursor-pointer ${active
+                ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold'
+                : 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50'
+                }`}
             >
               {/* Active vertical pill indicator on the far left edge matching image */}
               {active && (
@@ -301,11 +297,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
 
               <Icon
-                className={`w-4 h-4 shrink-0 ${
-                  active
-                    ? 'text-[#016D5D]'
-                    : 'text-neutral-800 group-hover:text-neutral-900'
-                }`}
+                className={`w-4 h-4 shrink-0 ${active
+                  ? 'text-[#016D5D]'
+                  : 'text-neutral-800 group-hover:text-neutral-900'
+                  }`}
               />
 
               {!collapsed && (
@@ -336,13 +331,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           );
         })}
 
-        {/* INTELLIGENCE & CONFIG Header */}
+        {/* Intelligence & config Header */}
         {!collapsed ? (
-          <div className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider px-3 pt-4 pb-1">
-            INTELLIGENCE & CONFIG
+          <div className="text-xs font-medium text-neutral-500 px-3 pt-3.5 pb-1 select-none">
+            Intelligence & config
           </div>
         ) : (
-          <div className="h-4 border-t border-neutral-100 my-2" />
+          <div className="border-t border-[#E5E7EB] mx-2.5 my-2" />
         )}
 
         {navIntelligence.map((item) => {
@@ -355,22 +350,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
               type="button"
               onClick={() => onSelectTab(item.id)}
               title={collapsed ? item.label : undefined}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors group relative cursor-pointer ${
-                active
-                  ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold'
-                  : 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50'
-              }`}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors group relative cursor-pointer ${active
+                ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold'
+                : 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50'
+                }`}
             >
               {active && (
                 <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#016D5D] rounded-r" />
               )}
 
               <Icon
-                className={`w-4 h-4 shrink-0 ${
-                  active
-                    ? 'text-[#016D5D]'
-                    : 'text-neutral-800 group-hover:text-neutral-900'
-                }`}
+                className={`w-4 h-4 shrink-0 ${active
+                  ? 'text-[#016D5D]'
+                  : 'text-neutral-800 group-hover:text-neutral-900'
+                  }`}
               />
 
               {!collapsed && (

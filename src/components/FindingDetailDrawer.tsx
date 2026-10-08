@@ -196,7 +196,7 @@ export const FindingDetailDrawer: React.FC<FindingDetailDrawerProps> = ({
             onClick={() => onUpdateStatus(finding.id, 'CONFIRMED')}
             className="px-3.5 py-2 text-xs font-semibold text-white bg-[#016D5D] hover:bg-[#01584b] rounded-md transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
           >
-            <ShieldCheck className="w-4 h-4 text-[#00E9C9]" />
+            <ShieldCheck className="w-4 h-4 text-white" />
             <span>Confirm Finding</span>
           </button>
 

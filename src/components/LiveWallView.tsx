@@ -72,7 +72,7 @@ export const LiveWallView: React.FC<LiveWallViewProps> = ({ findings, onSelectFi
               </div>
               <button
                 type="button"
-                className="px-2 py-1 text-[10px] font-semibold text-[#00E9C9] bg-neutral-800 rounded group-hover:bg-[#016D5D] group-hover:text-white transition-colors"
+                className="px-2 py-1 text-[10px] font-semibold text-white bg-neutral-800 rounded group-hover:bg-[#016D5D] group-hover:text-white transition-colors"
               >
                 Inspect
               </button>

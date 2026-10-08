@@ -110,7 +110,7 @@ export const CameraStreamModal: React.FC<CameraStreamModalProps> = ({
               {/* AI Bounding Box */}
               <rect x="5" y="5" width="40" height="85" fill="none" stroke="#00E9C9" strokeWidth="1.5" strokeDasharray="6 2" />
               <rect x="5" y="-10" width="70" height="14" fill="#016D5D" rx="2" />
-              <text x="8" y="0" fill="#00E9C9" fontSize="9" fontFamily="IBM Plex Mono" fontWeight="bold">
+              <text x="8" y="0" fill="#fff" fontSize="9" fontFamily="IBM Plex Mono" fontWeight="bold">
                 PERSON 98.4%
               </text>
             </g>
@@ -126,7 +126,7 @@ export const CameraStreamModal: React.FC<CameraStreamModalProps> = ({
 
           {/* OSD Top-Right: Resolution & Framerate */}
           <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-xs text-white px-2.5 py-1 rounded text-[11px] font-mono border border-white/10 flex items-center gap-2">
-            <span className="text-[#00E9C9]">1080P</span>
+            <span className="text-white">1080P</span>
             <span className="text-white/40">·</span>
             <span>30 FPS</span>
             <span className="text-white/40">·</span>
@@ -135,7 +135,7 @@ export const CameraStreamModal: React.FC<CameraStreamModalProps> = ({
 
           {/* OSD Bottom-Left: Active AI Detectors */}
           <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
-            <span className="bg-[#016D5D]/90 text-[#00E9C9] text-[10px] font-mono px-2 py-0.5 rounded border border-[#00E9C9]/30 font-medium">
+            <span className="bg-[#016D5D]/90 text-white text-[10px] font-mono px-2 py-0.5 rounded border border-[#00E9C9]/30 font-medium">
               OCCUPANCY
             </span>
             <span className="bg-[#016D5D]/90 text-white text-[10px] font-mono px-2 py-0.5 rounded border border-white/20 font-medium">

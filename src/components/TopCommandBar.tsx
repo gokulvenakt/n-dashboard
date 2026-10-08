@@ -10,6 +10,8 @@ import {
   CheckCircle2,
   ExternalLink,
   ShieldAlert,
+  LayoutDashboard,
+  SlidersHorizontal,
 } from 'lucide-react';
 
 interface TopCommandBarProps {
@@ -18,6 +20,10 @@ interface TopCommandBarProps {
   onOpenCommandPalette: (initialQuery?: string) => void;
   unreadCount?: number;
   onSelectSite?: (siteId: string) => void;
+  overviewMode?: 'standard' | 'customize';
+  onSetOverviewMode?: (mode: 'standard' | 'customize') => void;
+  isCustomizing?: boolean;
+  onToggleCustomizing?: () => void;
 }
 
 export const TopCommandBar: React.FC<TopCommandBarProps> = ({
@@ -26,8 +32,11 @@ export const TopCommandBar: React.FC<TopCommandBarProps> = ({
   onOpenCommandPalette,
   unreadCount = 2,
   onSelectSite,
+  overviewMode = 'standard',
+  onSetOverviewMode,
+  isCustomizing = false,
+  onToggleCustomizing,
 }) => {
-  const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   const sites = [
@@ -40,40 +49,53 @@ export const TopCommandBar: React.FC<TopCommandBarProps> = ({
   const currentSiteName = sites.find((s) => s.id === selectedSite)?.name || 'Global Operations';
 
   return (
-    <header className="h-14 bg-white border-b border-[#E5E7EB] px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-2xs">
+    <header className="h-[72px] bg-white border-b border-[#E5E7EB] px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-2xs">
       {/* Left: Breadcrumbs & Current Context */}
-      <div className="flex items-center gap-2 text-xs min-w-0">
-        <div className="flex items-center gap-1.5 font-semibold text-neutral-900 shrink-0">
-          <span>NEVRIXA</span>
-          <span className="text-neutral-300">/</span>
-        </div>
-        <span className="text-neutral-500 font-medium truncate">
+      <div className="flex items-center gap-2.5 text-xs min-w-0">
+
+        <span className="text-neutral-600 font-semibold truncate text-sm">
           {currentTab === 'overview'
             ? 'Overview'
             : currentTab === 'finding' || currentTab === 'findings'
-            ? 'Finding'
-            : currentTab === 'live-wall'
-            ? 'Live Wall'
-            : currentTab === 'cameras'
-            ? 'Cameras & Sites'
-            : currentTab === 'review'
-            ? 'Review'
-            : currentTab.charAt(0).toUpperCase() + currentTab.slice(1).replace('-', ' ')}
+              ? 'Finding'
+              : currentTab === 'live-wall'
+                ? 'Live Wall'
+                : currentTab === 'cameras'
+                  ? 'Cameras & Sites'
+                  : currentTab === 'review'
+                    ? 'Review'
+                    : currentTab.charAt(0).toUpperCase() + currentTab.slice(1).replace('-', ' ')}
         </span>
         <span className="text-neutral-300 hidden sm:inline">/</span>
-        <div className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E6F4F1] border border-[#016D5D]/20 text-[#016D5D] text-[11px] font-medium">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#00E9C9]" />
-          <span className="truncate max-w-[140px]">{currentSiteName}</span>
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#E6F4F1] border border-[#016D5D]/20 text-[#016D5D] text-xs font-semibold">
+
+          <span className="truncate max-w-[170px]">{currentSiteName}</span>
         </div>
       </div>
 
-
-
-      {/* Right: Notifications, Help, Workspace & Avatar */}
+      {/* Right: Search Box, Live Health, Notifications, Help, Workspace & Avatar */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* Search Box in Header - Placed before bell icon */}
+        <div className="relative flex items-center">
+          <div
+            onClick={() => onOpenCommandPalette()}
+            className="flex items-center gap-2 h-7 px-3 bg-[#F9FAFB] hover:bg-[#F3F4F6] border border-[#E5E7EB] hover:border-[#016D5D]/50 rounded-lg text-xs text-neutral-500 cursor-pointer transition-all shadow-2xs group w-34 sm:w-26 md:w-34"
+            title="Search cameras, findings, sites, detectors..."
+          >
+            <Search className="w-3.5 h-3.5 text-neutral-400 group-hover:text-[#016D5D] transition-colors shrink-0" />
+            <input
+              type="text"
+              readOnly
+              placeholder="Search or jump to..."
+              className="bg-transparent text-xs text-neutral-800 placeholder:text-neutral-400 outline-none w-full cursor-pointer font-sans"
+            />
+
+          </div>
+        </div>
+
         {/* Live System Health Indicator */}
         <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-md bg-[#F4F4F4] border border-[#E5E7EB] text-[11px] font-mono text-neutral-700">
-          <span className="w-2 h-2 rounded-full bg-[#00E9C9] animate-pulse" />
+          <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
           <span>15/15 Cams Online</span>
         </div>
 
@@ -135,48 +157,41 @@ export const TopCommandBar: React.FC<TopCommandBarProps> = ({
           <HelpCircle className="w-4 h-4" />
         </button>
 
-        {/* Workspace Switcher */}
-        <div className="relative hidden md:block">
+        {/* Standard & Customise Dashboard Mode Switcher */}
+        <div className="flex items-center bg-[#F4F4F4] border border-[#E5E7EB] rounded-lg p-0.5 shadow-2xs">
           <button
             type="button"
-            onClick={() => setWorkspaceMenuOpen(!workspaceMenuOpen)}
-            className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium text-neutral-700 hover:bg-[#F4F4F4] border border-transparent hover:border-[#E5E7EB] transition-colors cursor-pointer"
+            onClick={() => {
+              if (onSetOverviewMode) onSetOverviewMode('standard');
+              if (isCustomizing && onToggleCustomizing) onToggleCustomizing();
+            }}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${overviewMode === 'standard' && !isCustomizing
+              ? 'bg-white text-[#016D5D] shadow-xs font-bold border border-[#016D5D]/20'
+              : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/70'
+              }`}
+            title="Standard View"
           >
-            <Building2 className="w-3.5 h-3.5 text-[#016D5D]" />
-            <span className="max-w-[110px] truncate">Operations</span>
-            <ChevronDown className="w-3 h-3 text-neutral-400" />
+            <LayoutDashboard className="w-3.5 h-3.5" />
+            <span>Standard</span>
           </button>
-
-          {workspaceMenuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-[#E5E7EB] rounded-lg shadow-xl py-1 z-50 text-xs">
-              <div className="px-3 py-1.5 text-[10px] font-mono text-neutral-400 uppercase">
-                Select Workspace Site
-              </div>
-              {sites.map((site) => (
-                <button
-                  key={site.id}
-                  type="button"
-                  onClick={() => {
-                    if (onSelectSite) onSelectSite(site.id);
-                    setWorkspaceMenuOpen(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-[#F4F4F4] cursor-pointer ${selectedSite === site.id ? 'bg-[#E6F4F1] text-[#016D5D] font-semibold' : 'text-neutral-700'
-                    }`}
-                >
-                  <span className="truncate">{site.name}</span>
-                  <span className="text-[10px] font-mono text-neutral-500">{site.cameras}</span>
-                </button>
-              ))}
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={() => {
+              if (onSetOverviewMode) onSetOverviewMode('customize');
+              if (onToggleCustomizing) onToggleCustomizing();
+            }}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${overviewMode === 'customize' || isCustomizing
+              ? 'bg-white text-[#016D5D] shadow-xs font-bold border border-[#016D5D]/20'
+              : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/70'
+              }`}
+            title="Customise View"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <span>Customise</span>
+          </button>
         </div>
 
-        {/* User Avatar */}
-        <div className="flex items-center gap-2 pl-1 border-l border-[#E5E7EB]">
-          <div className="w-7 h-7 rounded-full bg-[#016D5D] text-white flex items-center justify-center text-xs font-semibold shadow-xs">
-            AK
-          </div>
-        </div>
+
       </div>
     </header>
   );
